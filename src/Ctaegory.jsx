@@ -51,107 +51,101 @@ const Category = () => {
 
   return (
     <div className="max-w-4xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-blue-800 text-3xl font-bold m-0">Categories</h1>
-        <p className="text-slate-600 text-base mt-1">Manage your product categories</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Categories</h1>
+        <p className="text-gray-600 text-sm mt-1">Manage your product categories</p>
       </div>
       
-      <div className="relative mb-8 p-8 bg-gradient-to-br from-white/95 to-cyan-50/80 backdrop-blur-xl rounded-3xl border border-cyan-200/50 shadow-2xl shadow-cyan-500/10">
-        <div className="absolute -top-4 left-8 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-full shadow-lg">
-          {editId ? '✏️ Edit Category' : '➕ Add New Category'}
-        </div>
+      <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="text-lg font-medium text-gray-800 mb-4">
+          {editId ? 'Edit Category' : 'Add New Category'}
+        </h3>
         
-        <form onSubmit={handleSubmit} className="mt-4 space-y-6">
-          <div className="relative group">
-            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-              <span className="text-cyan-500 text-xl">🏷️</span>
-            </div>
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full pl-14 pr-6 py-5 bg-white/70 border-2 border-slate-200/60 rounded-2xl outline-none text-lg transition-all duration-300 focus:border-cyan-400 focus:bg-white focus:shadow-lg focus:shadow-cyan-500/20 peer placeholder-transparent"
-              placeholder="Category name"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="Enter category name"
             />
-            <label className="absolute left-14 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium transition-all duration-300 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-cyan-600">
-              Category Name
-            </label>
           </div>
 
-          <div className="relative group">
-            <div className="absolute top-5 left-0 pl-4 flex items-start pointer-events-none">
-              <span className="text-cyan-500 text-xl">📝</span>
-            </div>
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
             <textarea
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              className="w-full pl-14 pr-6 py-5 bg-white/70 border-2 border-slate-200/60 rounded-2xl outline-none text-lg transition-all duration-300 focus:border-cyan-400 focus:bg-white focus:shadow-lg focus:shadow-cyan-500/20 peer placeholder-transparent resize-none h-32"
-              placeholder="Description"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 h-20 resize-none"
+              placeholder="Enter description (optional)"
             />
-            <label className="absolute left-14 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium transition-all duration-300 peer-placeholder-shown:text-base peer-placeholder-shown:text-slate-400 peer-placeholder-shown:top-5 peer-focus:-top-2.5 peer-focus:text-sm peer-focus:text-cyan-600">
-              Description (Optional)
-            </label>
           </div>
 
-          <div className="flex gap-4 pt-4">
+          <div className="flex gap-3">
             <button 
               type="submit" 
-              className="flex-1 relative overflow-hidden px-8 py-4 bg-gradient-to-r from-cyan-500 via-cyan-600 to-blue-600 text-white font-bold text-lg rounded-2xl transition-all duration-300 hover:shadow-2xl hover:shadow-cyan-500/40 hover:scale-[1.02] active:scale-[0.98] group"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
             >
-              <span className="relative z-10 flex items-center justify-center gap-2">
-                {editId ? '✅ Update Category' : '🚀 Create Category'}
-              </span>
-              <div className="absolute inset-0 bg-gradient-to-r from-cyan-400 to-blue-500 opacity-0 group-hover:opacity-100 transition-opacity duration-300"></div>
+              {editId ? 'Update' : 'Create'} Category
             </button>
             
             {editId && (
               <button 
                 type="button" 
                 onClick={() => { setEditId(null); setFormData({ name: '', description: '' }) }}
-                className="px-8 py-4 bg-gradient-to-r from-slate-400 to-slate-500 text-white font-semibold text-lg rounded-2xl transition-all duration-300 hover:shadow-xl hover:scale-[1.02] active:scale-[0.98]"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
-                ❌ Cancel
+                Cancel
               </button>
             )}
           </div>
         </form>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {categories.map((category) => (
-          <div key={category._id} className="group relative p-6 bg-white/80 backdrop-blur-lg rounded-2xl border border-cyan-500/20 shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] hover:-translate-y-2">
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <span className="text-2xl">📁</span>
-            </div>
-            
-            <div className="mb-4">
-              <h4 className="text-xl font-bold text-blue-800 mb-3 pr-8">{category.name}</h4>
-              <p className="text-slate-600 text-sm leading-relaxed line-clamp-3">{category.description || 'No description available'}</p>
-            </div>
-            
-            <div className="flex gap-2 mt-6">
-              <button 
-                onClick={() => handleEdit(category)} 
-                className="flex-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              >
-                ✏️ Edit
-              </button>
-              <button 
-                onClick={() => handleDelete(category._id)} 
-                className="flex-1 px-3 py-2 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105 hover:shadow-lg"
-              >
-                🗑️ Delete
-              </button>
-            </div>
-          </div>
-        ))}
+      <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead className="bg-gray-50">
+              <tr>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
+                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="bg-white divide-y divide-gray-200">
+              {categories.map((category) => (
+                <tr key={category._id} className="hover:bg-gray-50">
+                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{category.name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{category.description || 'No description available'}</td>
+                  <td className="px-4 py-3">
+                    <div className="flex gap-2">
+                      <button 
+                        onClick={() => handleEdit(category)} 
+                        className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700"
+                      >
+                        Edit
+                      </button>
+                      <button 
+                        onClick={() => handleDelete(category._id)} 
+                        className="px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+                      >
+                        Delete
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
         
         {categories.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-6xl mb-4">📂</div>
-            <p className="text-slate-500 text-lg font-medium">No categories added yet</p>
-            <p className="text-slate-400 text-sm mt-2">Create your first category using the form above</p>
+          <div className="text-center py-8">
+            <p className="text-gray-500">No categories found</p>
+            <p className="text-gray-400 text-sm mt-1">Create your first category using the form above</p>
           </div>
         )}
       </div>

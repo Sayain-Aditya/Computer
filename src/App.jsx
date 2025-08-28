@@ -21,9 +21,9 @@ function App() {
   }
 
   return (
-    <div className="flex bg-gradient-to-br from-sky-50 via-cyan-50 to-cyan-100 min-h-screen">
+    <div className="flex bg-gray-50 min-h-screen">
       <Sidebar activeTab={activeTab} setActiveTab={setActiveTab} />
-      <div className="ml-72 w-full p-5">
+      <div className="ml-60 w-full p-4">
         {renderContent()}
       </div>
     </div>

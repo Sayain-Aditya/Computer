@@ -12,6 +12,8 @@ const Order = () => {
     address: ''
   })
   const [showCompatible, setShowCompatible] = useState(false)
+  const [selectedProduct, setSelectedProduct] = useState(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     fetchProducts()
@@ -29,10 +31,13 @@ const Order = () => {
   const fetchCompatibleProducts = async (productId) => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
-      setCompatibleProducts(response.data)
+      const compatibleData = response.data.compatibleProducts || []
+      setCompatibleProducts(compatibleData)
       setShowCompatible(true)
     } catch (error) {
       console.error('Error fetching compatible products:', error)
+      setCompatibleProducts([])
+      setShowCompatible(true)
     }
   }
 
@@ -97,72 +102,72 @@ const Order = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-blue-800 text-3xl font-bold m-0">Create Order</h1>
-        <p className="text-slate-600 text-base mt-1">Take customer orders for computer parts</p>
+    <div className="max-w-7xl m-1 p-1">
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Create Order</h1>
+        <p className="text-gray-600 text-sm mt-1">Take customer orders for computer parts</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Customer Info */}
         <div className="lg:col-span-1">
-          <div className="bg-white/90 backdrop-blur-lg rounded-2xl border border-cyan-500/20 shadow-xl p-6 mb-6">
-            <h3 className="text-xl font-bold text-blue-800 mb-4">👤 Customer Information</h3>
+          <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
             <div className="space-y-4">
               <input
                 type="text"
                 placeholder="Customer Name"
                 value={customerInfo.name}
                 onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={customerInfo.email}
                 onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
               <input
                 type="tel"
                 placeholder="Phone"
                 value={customerInfo.phone}
                 onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-cyan-400"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
               <textarea
                 placeholder="Address"
                 value={customerInfo.address}
                 onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-slate-200 rounded-xl outline-none focus:border-cyan-400 h-20 resize-none"
+                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 h-20 resize-none"
               />
             </div>
           </div>
 
           {/* Order Summary */}
-          <div className="bg-white/90 backdrop-blur-lg rounded-2xl border border-cyan-500/20 shadow-xl p-6">
-            <h3 className="text-xl font-bold text-blue-800 mb-4">🛒 Order Summary</h3>
+          <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">Order Summary</h3>
             {selectedProducts.length === 0 ? (
-              <p className="text-slate-500 text-center py-4">No items in order</p>
+              <p className="text-gray-500 text-center py-4">No items in order</p>
             ) : (
               <div className="space-y-3">
                 {selectedProducts.map(item => (
-                  <div key={item._id} className="flex justify-between items-center p-3 bg-slate-50 rounded-lg">
+                  <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-slate-500">${item.sellingRate} each</p>
+                      <p className="text-xs text-gray-500">${item.sellingRate} each</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
                         onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
-                        className="w-6 h-6 bg-red-500 text-white rounded text-xs"
+                        className="w-6 h-6 bg-red-600 text-white rounded text-xs hover:bg-red-700"
                       >
                         -
                       </button>
                       <span className="text-sm font-medium w-8 text-center">{item.orderQuantity}</span>
                       <button
                         onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
-                        className="w-6 h-6 bg-green-500 text-white rounded text-xs"
+                        className="w-6 h-6 bg-green-600 text-white rounded text-xs hover:bg-green-700"
                       >
                         +
                       </button>
@@ -177,83 +182,171 @@ const Order = () => {
                 </div>
                 <button
                   onClick={handleSubmitOrder}
-                  className="w-full mt-4 px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-bold rounded-xl hover:scale-105 transition-all duration-300"
+                  className="w-full mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700"
                 >
-                  🚀 Create Order
+                  Create Order
                 </button>
               </div>
             )}
           </div>
         </div>
 
-        {/* Products Grid */}
+        {/* Products Table */}
         <div className="lg:col-span-2">
           <div className="mb-4 flex justify-between items-center">
-            <h3 className="text-xl font-bold text-blue-800">📦 Available Products</h3>
+            <h3 className="text-lg font-medium text-gray-800">Available Products</h3>
             {showCompatible && (
               <button
                 onClick={() => setShowCompatible(false)}
-                className="px-4 py-2 bg-slate-500 text-white rounded-lg text-sm"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
               >
                 Show All Products
               </button>
             )}
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {(showCompatible ? compatibleProducts : products).map(product => (
-              <div key={product._id} className="bg-white/80 backdrop-blur-lg rounded-xl border border-cyan-500/20 shadow-lg p-4 hover:shadow-xl transition-all duration-300">
-                <div className="flex justify-between items-start mb-3">
-                  <div className="flex-1">
-                    <h4 className="font-bold text-blue-800">{product.name}</h4>
-                    <p className="text-sm text-slate-500">{product.category?.name}</p>
-                    <p className="text-sm text-slate-600">Brand: {product.brand || 'N/A'}</p>
-                  </div>
-                  <span className={`px-2 py-1 rounded-full text-xs ${
-                    product.status === 'Active' ? 'bg-green-100 text-green-800' :
-                    product.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
-                    {product.status}
-                  </span>
-                </div>
-
-                <div className="flex justify-between items-center mb-3">
-                  <div>
-                    <p className="text-lg font-bold text-green-600">${product.sellingRate}</p>
-                    <p className="text-sm text-slate-500">Stock: {product.quantity}</p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2">
-                  <button
-                    onClick={() => addToOrder(product)}
-                    disabled={product.quantity === 0}
-                    className="flex-1 px-3 py-2 bg-gradient-to-r from-cyan-500 to-cyan-600 text-white text-sm font-medium rounded-lg hover:scale-105 transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  >
-                    🛒 Add to Order
-                  </button>
-                  <button
-                    onClick={() => fetchCompatibleProducts(product._id)}
-                    className="px-3 py-2 bg-gradient-to-r from-purple-500 to-purple-600 text-white text-sm font-medium rounded-lg hover:scale-105 transition-all duration-300"
-                  >
-                    🔗 Compatible
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {(showCompatible ? compatibleProducts : products).length === 0 && (
-            <div className="text-center py-16">
-              <div className="text-6xl mb-4">📦</div>
-              <p className="text-slate-500 text-lg font-medium">
-                {showCompatible ? 'No compatible products found' : 'No products available'}
-              </p>
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {(showCompatible ? compatibleProducts : products).map(product => (
+                    <tr key={product._id} className="hover:bg-gray-50">
+                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                        <button 
+                          onClick={() => { setSelectedProduct(product); setShowModal(true) }}
+                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                        >
+                          {product.name}
+                        </button>
+                      </td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{product.brand || 'N/A'}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-green-600">${product.sellingRate}</td>
+                      <td className="px-4 py-3 text-sm text-gray-500">{product.quantity}</td>
+                      <td className="px-4 py-3">
+                        <span className={`px-2 py-1 rounded text-xs ${
+                          product.status === 'Active' ? 'bg-green-100 text-green-800' :
+                          product.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
+                          'bg-red-100 text-red-800'
+                        }`}>
+                          {product.status}
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex gap-2">
+                          <button
+                            onClick={() => addToOrder(product)}
+                            disabled={product.quantity === 0}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Add
+                          </button>
+                          {product.category?.name?.toLowerCase().includes('motherboard') && (
+                            <button
+                              onClick={() => fetchCompatibleProducts(product._id)}
+                              className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                            >
+                              Compatible
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
             </div>
-          )}
+
+            {(showCompatible ? compatibleProducts : products).length === 0 && (
+              <div className="text-center py-8">
+                <p className="text-gray-500">
+                  {showCompatible ? 'No compatible products found' : 'No products available'}
+                </p>
+              </div>
+            )}
+          </div>
         </div>
       </div>
+
+      {/* Product Details Modal */}
+      {showModal && selectedProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">{selectedProduct.name}</h3>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div>
+                <p className="text-sm text-gray-600 mb-2"><strong>Category:</strong> {selectedProduct.category?.name || 'N/A'}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Brand:</strong> {selectedProduct.brand || 'N/A'}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Model:</strong> {selectedProduct.modelNumber || 'N/A'}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Price:</strong> <span className="text-green-600 font-medium">${selectedProduct.sellingRate}</span></p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Cost:</strong> ${selectedProduct.costRate || 'N/A'}</p>
+              </div>
+              <div>
+                <p className="text-sm text-gray-600 mb-2"><strong>Stock:</strong> {selectedProduct.quantity}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Status:</strong> 
+                  <span className={`ml-1 px-2 py-1 rounded text-xs ${
+                    selectedProduct.status === 'Active' ? 'bg-green-100 text-green-800' :
+                    selectedProduct.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
+                    'bg-red-100 text-red-800'
+                  }`}>
+                    {selectedProduct.status}
+                  </span>
+                </p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Warranty:</strong> {selectedProduct.warranty || 'N/A'}</p>
+              </div>
+            </div>
+            
+            {selectedProduct.attributes && Object.keys(selectedProduct.attributes).length > 0 && (
+              <div className="mt-4">
+                <h4 className="text-sm font-medium text-gray-700 mb-2">Attributes:</h4>
+                <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                  {Object.entries(selectedProduct.attributes).map(([key, value]) => (
+                    <div key={key} className="bg-gray-50 p-2 rounded text-xs">
+                      <strong>{key}:</strong> {value}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-6 flex gap-3">
+              <button
+                onClick={() => { addToOrder(selectedProduct); setShowModal(false) }}
+                disabled={selectedProduct.quantity === 0}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                Add to Order
+              </button>
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

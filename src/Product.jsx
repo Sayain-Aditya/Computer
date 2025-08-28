@@ -107,208 +107,201 @@ const Product = () => {
 
   return (
     <div className="max-w-6xl mx-auto">
-      <div className="mb-8">
-        <h1 className="text-blue-800 text-3xl font-bold m-0">Products</h1>
-        <p className="text-slate-600 text-base mt-1">Manage your computer parts inventory</p>
+      <div className="mb-6">
+        <h1 className="text-2xl font-bold text-gray-800">Products</h1>
+        <p className="text-gray-600 text-sm mt-1">Manage your computer parts inventory</p>
       </div>
       
-      <div className="relative mb-8 p-8 bg-gradient-to-br from-white/95 to-cyan-50/80 backdrop-blur-xl rounded-3xl border border-cyan-200/50 shadow-2xl shadow-cyan-500/10">
-        <div className="absolute -top-4 left-8 px-4 py-2 bg-gradient-to-r from-cyan-500 to-blue-600 text-white text-sm font-semibold rounded-full shadow-lg">
-          {editId ? '✏️ Edit Product' : '➕ Add New Product'}
-        </div>
+      <div className="mb-6 p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
+        <h3 className="text-lg font-medium text-gray-800 mb-4">
+          {editId ? 'Edit Product' : 'Add New Product'}
+        </h3>
         
-        <form onSubmit={handleSubmit} className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-          <div className="relative group">
+        <form onSubmit={handleSubmit} className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Product Name</label>
             <input
               type="text"
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
               required
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white peer placeholder-transparent"
-              placeholder="Product name"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="Enter product name"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Product Name</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
               value={formData.category}
               onChange={(e) => setFormData({ ...formData, category: e.target.value })}
               required
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
             >
               <option value="">Select Category</option>
               {categories.map(cat => (
                 <option key={cat._id} value={cat._id}>{cat.name}</option>
               ))}
             </select>
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Category</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Brand</label>
             <input
               type="text"
               value={formData.brand}
               onChange={(e) => setFormData({ ...formData, brand: e.target.value })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Brand"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="Enter brand"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Brand</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Model Number</label>
             <input
               type="text"
               value={formData.modelNumber}
               onChange={(e) => setFormData({ ...formData, modelNumber: e.target.value })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Model Number"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="Enter model number"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Model Number</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Quantity</label>
             <input
               type="number"
               value={formData.quantity}
               onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Quantity"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="0"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Quantity</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Selling Rate</label>
             <input
               type="number"
               step="0.01"
               value={formData.sellingRate}
               onChange={(e) => setFormData({ ...formData, sellingRate: parseFloat(e.target.value) })}
               required
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Selling Rate"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="0.00"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Selling Rate</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Cost Rate</label>
             <input
               type="number"
               step="0.01"
               value={formData.costRate}
               onChange={(e) => setFormData({ ...formData, costRate: parseFloat(e.target.value) })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Cost Rate"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="0.00"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Cost Rate</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={formData.status}
               onChange={(e) => setFormData({ ...formData, status: e.target.value })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
             >
               <option value="Active">Active</option>
               <option value="Inactive">Inactive</option>
               <option value="Out of Stock">Out of Stock</option>
             </select>
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Status</label>
           </div>
 
-          <div className="relative group">
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Warranty</label>
             <input
               type="text"
               value={formData.warranty}
               onChange={(e) => setFormData({ ...formData, warranty: e.target.value })}
-              className="w-full px-4 py-4 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400 focus:bg-white"
-              placeholder="Warranty"
+              className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              placeholder="Enter warranty period"
             />
-            <label className="absolute left-4 -top-2.5 bg-white px-2 text-sm text-cyan-600 font-medium">Warranty</label>
           </div>
 
-          {/* Attributes Section */}
-          <div className="md:col-span-2 space-y-4">
-            <h4 className="text-lg font-semibold text-blue-800">🔧 Product Attributes</h4>
+          <div className="md:col-span-2">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Product Attributes</h4>
             
-            {/* Add New Attribute */}
-            <div className="flex gap-3">
+            <div className="flex gap-2 mb-3">
               <input
                 type="text"
                 placeholder="Attribute name (e.g., Socket)"
                 value={newAttribute.key}
                 onChange={(e) => setNewAttribute({ ...newAttribute, key: e.target.value })}
-                className="flex-1 px-4 py-3 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
               <input
                 type="text"
                 placeholder="Value (e.g., AM4)"
                 value={newAttribute.value}
                 onChange={(e) => setNewAttribute({ ...newAttribute, value: e.target.value })}
-                className="flex-1 px-4 py-3 bg-white/70 border-2 border-slate-200/60 rounded-xl outline-none text-base transition-all duration-300 focus:border-cyan-400"
+                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
               />
               <button
                 type="button"
                 onClick={addAttribute}
-                className="px-6 py-3 bg-gradient-to-r from-green-500 to-green-600 text-white font-medium rounded-xl hover:scale-105 transition-all duration-300"
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
               >
-                ➕ Add
+                Add
               </button>
             </div>
 
-            {/* Display Attributes */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
               {Object.entries(formData.attributes).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between p-3 bg-cyan-50 border border-cyan-200 rounded-lg">
+                <div key={key} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
                   <span className="text-sm">
-                    <strong className="text-cyan-700">{key}:</strong> {value}
+                    <strong>{key}:</strong> {value}
                   </span>
                   <button
                     type="button"
                     onClick={() => removeAttribute(key)}
-                    className="text-red-500 hover:text-red-700 font-bold"
+                    className="text-red-600 hover:text-red-800 text-sm"
                   >
-                    ❌
+                    Remove
                   </button>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="md:col-span-2 flex gap-4 pt-4">
+          <div className="md:col-span-2 flex gap-3 pt-4">
             <button 
               type="submit" 
-              className="flex-1 px-8 py-4 bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg rounded-2xl transition-all duration-300 hover:shadow-2xl hover:scale-[1.02]"
+              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
             >
-              {editId ? '✅ Update Product' : '🚀 Create Product'}
+              {editId ? 'Update' : 'Create'} Product
             </button>
             
             {editId && (
               <button 
                 type="button" 
                 onClick={() => { setEditId(null); setFormData({ name: '', category: '', brand: '', modelNumber: '', quantity: 0, sellingRate: 0, costRate: 0, status: 'Active', warranty: '', attributes: {} }) }}
-                className="px-8 py-4 bg-gradient-to-r from-slate-400 to-slate-500 text-white font-semibold text-lg rounded-2xl transition-all duration-300 hover:scale-[1.02]"
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
               >
-                ❌ Cancel
+                Cancel
               </button>
             )}
           </div>
         </form>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
         {products.map((product) => (
-          <div key={product._id} className="group relative p-6 bg-white/80 backdrop-blur-lg rounded-2xl border border-cyan-500/20 shadow-lg transition-all duration-300 hover:shadow-2xl hover:scale-[1.05] hover:-translate-y-2">
-            <div className="absolute top-4 right-4 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-              <span className="text-2xl">📦</span>
-            </div>
-            
-            <div className="mb-4">
-              <h4 className="text-xl font-bold text-blue-800 mb-2 pr-8">{product.name}</h4>
-              <p className="text-sm text-slate-500 mb-2">{product.category?.name}</p>
-              <div className="flex justify-between text-sm">
-                <span className="text-slate-600">Brand: {product.brand || 'N/A'}</span>
-                <span className={`px-2 py-1 rounded-full text-xs ${
+          <div key={product._id} className="p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md">
+            <div className="mb-3">
+              <h4 className="text-lg font-medium text-gray-800 mb-1">{product.name}</h4>
+              <p className="text-sm text-gray-500 mb-2">{product.category?.name}</p>
+              <div className="flex justify-between items-center text-sm mb-2">
+                <span className="text-gray-600">Brand: {product.brand || 'N/A'}</span>
+                <span className={`px-2 py-1 rounded text-xs ${
                   product.status === 'Active' ? 'bg-green-100 text-green-800' :
                   product.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
                   'bg-red-100 text-red-800'
@@ -316,26 +309,26 @@ const Product = () => {
                   {product.status}
                 </span>
               </div>
-              <div className="mt-3 space-y-1">
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Price:</span>
-                  <span className="font-semibold text-green-600">${product.sellingRate}</span>
+              <div className="space-y-1 text-sm">
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Price:</span>
+                  <span className="font-medium text-green-600">${product.sellingRate}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-slate-600">Stock:</span>
-                  <span className="font-semibold">{product.quantity}</span>
+                <div className="flex justify-between">
+                  <span className="text-gray-600">Stock:</span>
+                  <span className="font-medium">{product.quantity}</span>
                 </div>
                 {Object.keys(product.attributes || {}).length > 0 && (
-                  <div className="mt-2 pt-2 border-t border-slate-200">
-                    <p className="text-xs text-slate-500 mb-1">Attributes:</p>
+                  <div className="pt-2 border-t border-gray-200">
+                    <p className="text-xs text-gray-500 mb-1">Attributes:</p>
                     <div className="flex flex-wrap gap-1">
                       {Object.entries(product.attributes).slice(0, 2).map(([key, value]) => (
-                        <span key={key} className="text-xs bg-cyan-100 text-cyan-700 px-2 py-1 rounded">
+                        <span key={key} className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded">
                           {key}: {value}
                         </span>
                       ))}
                       {Object.keys(product.attributes).length > 2 && (
-                        <span className="text-xs text-slate-400">+{Object.keys(product.attributes).length - 2} more</span>
+                        <span className="text-xs text-gray-400">+{Object.keys(product.attributes).length - 2} more</span>
                       )}
                     </div>
                   </div>
@@ -343,28 +336,27 @@ const Product = () => {
               </div>
             </div>
             
-            <div className="flex gap-2 mt-6">
+            <div className="flex gap-2">
               <button 
                 onClick={() => handleEdit(product)} 
-                className="flex-1 px-3 py-2 bg-gradient-to-r from-emerald-500 to-emerald-600 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105"
+                className="flex-1 px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
               >
-                ✏️ Edit
+                Edit
               </button>
               <button 
                 onClick={() => handleDelete(product._id)} 
-                className="flex-1 px-3 py-2 bg-gradient-to-r from-rose-500 to-rose-600 text-white text-sm font-medium rounded-lg transition-all duration-300 hover:scale-105"
+                className="flex-1 px-3 py-1 bg-red-600 text-white text-sm rounded hover:bg-red-700"
               >
-                🗑️ Delete
+                Delete
               </button>
             </div>
           </div>
         ))}
         
         {products.length === 0 && (
-          <div className="col-span-full flex flex-col items-center justify-center py-16 text-center">
-            <div className="text-6xl mb-4">📦</div>
-            <p className="text-slate-500 text-lg font-medium">No products added yet</p>
-            <p className="text-slate-400 text-sm mt-2">Create your first product using the form above</p>
+          <div className="col-span-full text-center py-8">
+            <p className="text-gray-500">No products found</p>
+            <p className="text-gray-400 text-sm mt-1">Create your first product using the form above</p>
           </div>
         )}
       </div>

@@ -146,17 +146,18 @@ const CreateOrder = () => {
 
     const orderData = {
       customerName: customerInfo.name,
-      email: customerInfo.email,
-      phone: customerInfo.phone,
+      customerEmail: customerInfo.email,
+      customerPhone: customerInfo.phone,
       address: customerInfo.address,
-      products: selectedProducts.map(item => ({
-        productId: item._id,
-        quantity: item.orderQuantity
+      items: selectedProducts.map(item => ({
+        product: item._id,
+        quantity: item.orderQuantity,
+        price: item.sellingRate
       }))
     }
 
     try {
-      await axios.post('https://computer-shop-ecru.vercel.app/api/orders', orderData)
+      await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
       alert('Order created successfully!')
       navigate('/orders')
     } catch (error) {
@@ -262,15 +263,36 @@ const CreateOrder = () => {
                     Create Order
                   </motion.button>
                   <motion.button
-                    onClick={() => navigate('/quotation', { 
-                      state: { 
-                        orderData: {
-                          customer: customerInfo,
-                          products: selectedProducts,
-                          totalAmount: getTotalAmount()
-                        }
+                    onClick={async () => {
+                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
+                        alert('Please fill customer details and add products to generate quote')
+                        return
                       }
-                    })}
+
+                      const quotationData = {
+                        customerName: customerInfo.name,
+                        customerEmail: customerInfo.email,
+                        customerPhone: customerInfo.phone,
+                        address: customerInfo.address,
+                        type: 'Quotation',
+                        items: selectedProducts.map(item => ({
+                          product: item._id,
+                          quantity: item.orderQuantity,
+                          price: item.sellingRate
+                        })),
+                        totalAmount: getTotalAmount(),
+                        status: 'Pending'
+                      }
+
+                      try {
+                        await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                        alert('Quotation generated and saved successfully!')
+                        navigate('/quotation-list')
+                      } catch (error) {
+                        console.error('Error generating quotation:', error)
+                        alert('Failed to generate quotation. Please try again.')
+                      }
+                    }}
                     disabled={selectedProducts.length === 0}
                     className="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
                     whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}

@@ -8,6 +8,7 @@ import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
 import CreateOrder from "./pages/CreateOrder";
 import Quotation from "./pages/Quotation";
+import QuotationList from "./pages/QuotationList";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -26,6 +27,7 @@ function App() {
             <Route path="/orders" element={<Order />} />
             <Route path="/create-order" element={<CreateOrder />} />
             <Route path="/quotation" element={<Quotation />} />
+            <Route path="/quotation-list" element={<QuotationList />} />
           </Routes>
         </div>
       </div>

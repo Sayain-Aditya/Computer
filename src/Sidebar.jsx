@@ -9,6 +9,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'categories', label: 'Categories', path: '/categories' },
     { id: 'products', label: 'Products', path: '/products' },
     { id: 'orders', label: 'Orders', path: '/orders' },
+    { id: 'quotations', label: 'Quotation List', path: '/quotation-list' },
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard' }
   ]
 
@@ -59,6 +60,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
                 {item.id === 'categories' && '📁'}
                 {item.id === 'products' && '📦'}
                 {item.id === 'orders' && '📋'}
+                {item.id === 'quotations' && '📄'}
                 {item.id === 'dashboard' && '📊'}
               </span>
               {isOpen && <span className="ml-3">{item.label}</span>}

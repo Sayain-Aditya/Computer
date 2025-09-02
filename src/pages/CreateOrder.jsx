@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
+import { motion } from 'framer-motion'
 import axios from 'axios'
 
 const CreateOrder = () => {
@@ -156,7 +156,7 @@ const CreateOrder = () => {
     }
 
     try {
-      await axios.post('https://computer-shop-ecru.vercel.app/api/orders', orderData)
+      await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
       alert('Order created successfully!')
       navigate('/orders')
     } catch (error) {

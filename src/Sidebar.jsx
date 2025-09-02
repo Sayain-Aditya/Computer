@@ -15,12 +15,12 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
 
   return (
     <motion.div 
-      className={`sidebar ${isOpen ? 'w-64' : 'w-16'} h-screen bg-gray-800 text-white fixed left-0 top-0 shadow-lg transition-all duration-300`}
+      className={`sidebar ${isOpen ? 'w-64' : 'w-16'} h-screen bg-slate-900 text-white fixed left-0 top-0 shadow-lg transition-all duration-300 z-50 ${isOpen ? 'block' : 'hidden sm:block'}`}
       initial={{ x: -250 }}
       animate={{ x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+      <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
           <h2 className="text-xl font-bold text-white m-0">
             Computer Shop
@@ -29,7 +29,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}
-          className="p-2 rounded-lg hover:bg-gray-700 transition-colors"
+          className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
         >
           <div className="w-5 h-5 flex flex-col justify-center space-y-1">
             <div className="w-full h-0.5 bg-white"></div>
@@ -51,8 +51,8 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               to={item.path}
               className={`flex items-center mx-2 my-1 px-3 py-3 rounded text-sm ${
                 location.pathname === item.path
-                  ? 'bg-blue-600 text-white font-medium' 
-                  : 'text-gray-300 hover:bg-gray-700 hover:text-white'
+                  ? 'bg-slate-700 text-white font-medium' 
+                  : 'text-slate-200 hover:bg-slate-800 hover:text-white'
               }`}
               title={!isOpen ? item.label : ''}
             >
@@ -69,7 +69,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         ))}
       </nav>
       
-      <div className="absolute bottom-4 left-4 right-4 p-3 bg-gray-700 rounded text-center">
+      <div className="absolute bottom-4 left-4 right-4 p-3 bg-slate-800 rounded text-center">
         <p className="text-xs text-gray-400 m-0">v1.0.0</p>
       </div>
     </motion.div>

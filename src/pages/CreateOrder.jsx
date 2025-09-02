@@ -153,7 +153,8 @@ const CreateOrder = () => {
         product: item._id,
         quantity: item.orderQuantity,
         price: item.sellingRate
-      }))
+      })),
+      totalAmount: getTotalAmount()
     }
 
     try {
@@ -167,23 +168,23 @@ const CreateOrder = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="max-w-7xl mx-auto p-2 sm:p-4">
+      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Create Order</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Create Order</h1>
           <p className="text-gray-600 text-sm mt-1">Take customer orders for computer parts</p>
         </div>
         <button 
           onClick={() => navigate('/orders')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm sm:text-base"
         >
           Back to Orders
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Customer Info */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1 order-2 xl:order-1">
           <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
             <div className="space-y-4">
@@ -307,10 +308,10 @@ const CreateOrder = () => {
         </div>
 
         {/* Products Table */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2 order-1 xl:order-2">
           <div className="mb-4 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-800">Available Products</h3>
-            <div className="flex gap-3 items-center">
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <select
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
@@ -339,13 +340,13 @@ const CreateOrder = () => {
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="hidden md:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="hidden lg:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="hidden sm:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="hidden lg:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -358,7 +359,7 @@ const CreateOrder = () => {
                       transition={{ delay: index * 0.05 }}
                       whileHover={{ backgroundColor: "#f9fafb", scale: 1.01 }}
                     >
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">
+                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-900">
                         <button 
                           onClick={() => { setSelectedProduct(product); setShowModal(true) }}
                           className="text-blue-600 hover:text-blue-800 hover:underline"
@@ -366,11 +367,11 @@ const CreateOrder = () => {
                           {product.name}
                         </button>
                       </td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{product.brand || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">${product.sellingRate}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{product.quantity}</td>
-                      <td className="px-4 py-3">
+                      <td className="hidden md:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
+                      <td className="hidden lg:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.brand || 'N/A'}</td>
+                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-green-600">${product.sellingRate}</td>
+                      <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.quantity}</td>
+                      <td className="hidden lg:table-cell px-2 sm:px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs ${
                           product.status === 'Active' ? 'bg-green-100 text-green-800' :
                           product.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
@@ -379,8 +380,8 @@ const CreateOrder = () => {
                           {product.status}
                         </span>
                       </td>
-                      <td className="px-4 py-3">
-                        <div className="flex gap-2">
+                      <td className="px-2 sm:px-4 py-3">
+                        <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                           <motion.button
                             onClick={() => addToOrder(product)}
                             disabled={product.quantity === 0}

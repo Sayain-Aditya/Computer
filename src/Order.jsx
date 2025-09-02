@@ -42,125 +42,200 @@ const Order = () => {
   const handlePrintOrder = async (order) => {
     try {
       // Fetch product details for each item
-      const productsResponse = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
+        axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      ])
       const allProducts = productsResponse.data
+      const allCategories = categoriesResponse.data
       
       const itemsWithNames = order.items?.map(item => {
-        const product = allProducts.find(p => p._id === item.product)
+        // Handle case where item.product might be an object or string
+        let productName = 'Unknown Product'
+        let categoryName = 'N/A'
+        
+        if (typeof item.product === 'object' && item.product?.name) {
+          // item.product is already a product object
+          productName = item.product.name
+          if (item.product.category?.name) {
+            categoryName = item.product.category.name
+          } else if (item.product.category) {
+            // category might be just an ID, look it up
+            const category = allCategories.find(c => c._id === item.product.category)
+            categoryName = category?.name || 'N/A'
+          }
+        } else if (typeof item.product === 'string') {
+          // item.product is an ID, find the product
+          const product = allProducts.find(p => p._id === item.product)
+          productName = product?.name || `Product ${item.product}`
+          if (product?.category?.name) {
+            categoryName = product.category.name
+          } else if (product?.category) {
+            // category might be just an ID, look it up
+            const category = allCategories.find(c => c._id === product.category)
+            categoryName = category?.name || 'N/A'
+          }
+        }
+        
         return {
           ...item,
-          productName: product?.name || `Product ${item.product}`,
-          categoryName: product?.category?.name || 'N/A'
+          productName: productName,
+          categoryName: categoryName
         }
       }) || []
       const printContent = `
         <!DOCTYPE html>
         <html>
         <head>
+          <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <title>Order - ${order._id?.slice(-6)}</title>
           <style>
-            body { font-family: Arial, sans-serif; margin: 0; padding: 20px; background: white; }
-            .header { text-center; margin-bottom: 48px; }
-            .header h1 { font-size: 2.5rem; font-weight: bold; color: #1f2937; margin-bottom: 8px; }
-            .header p { font-size: 1.25rem; color: #4b5563; }
-            .header hr { width: 128px; margin: 16px auto; border: 1px solid #d1d5db; }
-            .section { display: grid; grid-template-columns: 1fr 1fr; gap: 48px; margin-bottom: 48px; }
-            .section h3 { font-size: 1.25rem; font-weight: bold; color: #1f2937; margin-bottom: 16px; border-bottom: 2px solid #e5e7eb; padding-bottom: 8px; }
-            .customer-info { color: #374151; }
-            .customer-info p { margin: 4px 0; }
-            .customer-name { font-weight: 600; font-size: 1.125rem; }
-            .order-info { text-align: right; color: #374151; }
-            .order-info p { margin: 4px 0; }
-            .order-info span { font-weight: 500; }
-            table { width: 100%; border-collapse: collapse; border: 2px solid #9ca3af; margin-bottom: 48px; }
-            th { border: 2px solid #9ca3af; padding: 24px; color: white; background-color: #1e3a8a; font-weight: bold; }
-            td { border: 1px solid #d1d5db; padding: 24px; }
-            .item-row:nth-child(even) { background-color: #f9fafb; }
-            .item-name { font-weight: 600; color: #1f2937; }
-            .item-category { font-size: 0.875rem; color: #4b5563; }
-            .qty { text-align: center; font-weight: 500; }
-            .price { text-align: right; font-weight: 500; }
-            .total-cell { text-align: right; font-weight: bold; }
-            .totals { display: flex; justify-content: flex-end; margin-bottom: 48px; }
-            .totals-box { width: 320px; background-color: #f9fafb; padding: 24px; border-radius: 8px; border: 2px solid #d1d5db; }
-            .totals-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid #d1d5db; font-size: 1.125rem; }
-            .totals-row span { font-weight: 500; }
-            .totals-row.final { font-weight: bold; font-size: 1.5rem; color: #1f2937; border-top: 2px solid #9ca3af; margin-top: 8px; padding-top: 16px; }
-            .footer { text-align: center; border-top: 2px solid #d1d5db; padding-top: 32px; }
-            .footer p:first-child { font-size: 1.125rem; font-weight: 500; color: #374151; margin-bottom: 8px; }
-            .footer p:last-child { color: #4b5563; }
+            @page { margin: 0.4in; size: A4; }
+            * { margin: 0; padding: 0; box-sizing: border-box; }
+            body { font-family: 'Arial', sans-serif; line-height: 1.4; color: #333; background: white; font-size: 12px; }
+            
+            .container { max-width: 100%; margin: 0 auto; padding: 10px; }
+            
+            .header { text-align: center; margin-bottom: 20px; border-bottom: 2px solid #1e3a8a; padding-bottom: 10px; }
+            .header h1 { font-size: 1.8rem; font-weight: bold; color: #1e3a8a; margin-bottom: 3px; }
+            .header .company { font-size: 1rem; color: #666; font-weight: 500; }
+            
+            .info-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+            .info-box { background: #f8f9fa; padding: 12px; border-radius: 6px; border-left: 3px solid #1e3a8a; }
+            .info-title { font-size: 0.9rem; font-weight: bold; color: #1e3a8a; margin-bottom: 8px; text-transform: uppercase; }
+            .customer-name { font-size: 1rem; font-weight: bold; color: #333; margin-bottom: 3px; }
+            .info-item { margin-bottom: 2px; color: #555; font-size: 0.85rem; }
+            .order-details { text-align: left; }
+            .order-details .info-item { display: flex; justify-content: space-between; }
+            .order-details .label { font-weight: 600; }
+            
+            .items-section { margin-bottom: 20px; }
+            .items-title { font-size: 1rem; font-weight: bold; color: #1e3a8a; margin-bottom: 10px; text-transform: uppercase; }
+            
+            .items-table { width: 100%; border-collapse: collapse; }
+            .items-table th { background: #1e3a8a; color: white; padding: 8px; text-align: left; font-weight: bold; font-size: 0.8rem; }
+            .items-table th:nth-child(2), .items-table th:nth-child(3), .items-table th:nth-child(4) { text-align: center; }
+            .items-table th:nth-child(4) { text-align: right; }
+            .items-table td { padding: 8px; border-bottom: 1px solid #eee; font-size: 0.8rem; }
+            .items-table tbody tr:nth-child(even) { background: #f8f9fa; }
+            
+            .item-name { font-weight: 600; color: #333; margin-bottom: 2px; }
+            .item-category { font-size: 0.75rem; color: #666; font-style: italic; }
+            .qty-cell, .price-cell { text-align: center; font-weight: 500; }
+            .total-cell { text-align: right; font-weight: bold; color: #1e3a8a; }
+            
+            .summary-section { display: flex; justify-content: flex-end; margin-bottom: 15px; }
+            .summary-box { background: #f8f9fa; padding: 12px; border-radius: 6px; min-width: 250px; border: 1px solid #1e3a8a; }
+            .summary-row { display: flex; justify-content: space-between; padding: 4px 0; border-bottom: 1px solid #ddd; font-size: 0.85rem; }
+            .summary-row:last-child { border-bottom: none; }
+            .summary-label { font-weight: 500; }
+            .summary-value { font-weight: 600; }
+            .summary-total { background: #1e3a8a; color: white; margin: 8px -12px -12px -12px; padding: 8px 12px; border-radius: 0 0 5px 5px; }
+            .summary-total .summary-row { border-bottom: none; font-size: 0.9rem; font-weight: bold; }
+            
+            .footer { text-align: center; border-top: 1px solid #1e3a8a; padding-top: 10px; }
+            .footer .thank-you { font-size: 1rem; font-weight: bold; color: #1e3a8a; margin-bottom: 5px; }
+            .footer .note { color: #666; font-size: 0.75rem; }
+            
+            @media print {
+              .container { padding: 0; }
+              .header { page-break-after: avoid; }
+              .info-section { page-break-after: avoid; }
+              .items-section { page-break-inside: auto; }
+              .summary-section { page-break-inside: avoid; }
+              .footer { page-break-before: avoid; }
+              body { font-size: 11px; }
+            }
           </style>
         </head>
         <body>
-          <div class="header">
-            <h1>ORDER DETAILS</h1>
-            <p>Computer Shop</p>
-            <hr>
-          </div>
-          
-          <div class="section">
-            <div>
-              <h3>Bill To:</h3>
-              <div class="customer-info">
-                <p class="customer-name">${order.customerName}</p>
-                <p>${order.customerEmail}</p>
-                <p>${order.customerPhone}</p>
-                <p>${order.address || 'N/A'}</p>
+          <div class="container">
+            <div class="header">
+              <h1>ORDER</h1>
+              <div class="company">Computer Shop</div>
+            </div>
+            
+            <div class="info-section">
+              <div class="info-box">
+                <div class="info-title">Bill To</div>
+                <div class="customer-name">${order.customerName}</div>
+                <div class="info-item">${order.customerEmail}</div>
+                <div class="info-item">${order.customerPhone}</div>
+                <div class="info-item">${order.address || 'Address not provided'}</div>
+              </div>
+              
+              <div class="info-box order-details">
+                <div class="info-title">Order Details</div>
+                <div class="info-item">
+                  <span class="label">Date:</span>
+                  <span>${new Date().toLocaleDateString()}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Order #:</span>
+                  <span>OR-${order._id?.slice(-6)}</span>
+                </div>
+                <div class="info-item">
+                  <span class="label">Status:</span>
+                  <span>Confirmed</span>
+                </div>
               </div>
             </div>
-            <div>
-              <h3>Order Details:</h3>
-              <div class="order-info">
-                <p><span>Date:</span> ${new Date(order.createdAt).toLocaleDateString()}</p>
-                <p><span>Order #:</span> OR-${order._id?.slice(-6)}</p>
-                <p><span>Type:</span> ${order.type}</p>
+            
+            <div class="items-section">
+              <div class="items-title">Order Items</div>
+              <table class="items-table">
+                <thead>
+                  <tr>
+                    <th>Item Description</th>
+                    <th>Qty</th>
+                    <th>Unit Price</th>
+                    <th>Total</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${itemsWithNames?.map((item, index) => `
+                    <tr>
+                      <td>
+                        <div class="item-name">${item.productName}</div>
+                        <div class="item-category">${item.categoryName}</div>
+                      </td>
+                      <td class="qty-cell">${item.quantity}</td>
+                      <td class="price-cell">$${item.price.toFixed(2)}</td>
+                      <td class="total-cell">$${(item.price * item.quantity).toFixed(2)}</td>
+                    </tr>
+                  `).join('') || ''}
+                </tbody>
+              </table>
+            </div>
+            
+            <div class="summary-section">
+              <div class="summary-box">
+                <div class="summary-row">
+                  <span class="summary-label">Subtotal:</span>
+                  <span class="summary-value">$${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2) || '0.00'}</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Tax (0%):</span>
+                  <span class="summary-value">$0.00</span>
+                </div>
+                <div class="summary-row">
+                  <span class="summary-label">Shipping:</span>
+                  <span class="summary-value">$0.00</span>
+                </div>
+                <div class="summary-total">
+                  <div class="summary-row">
+                    <span class="summary-label">TOTAL:</span>
+                    <span class="summary-value">$${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2) || '0.00'}</span>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
-          
-          <table>
-            <thead>
-              <tr>
-                <th style="text-align: left;">Item Description</th>
-                <th style="text-align: center;">Qty</th>
-                <th style="text-align: right;">Unit Price</th>
-                <th style="text-align: right;">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              ${itemsWithNames?.map((item, index) => `
-                <tr class="item-row">
-                  <td>
-                    <div class="item-name">${item.productName}</div>
-                    <div class="item-category">${item.categoryName}</div>
-                  </td>
-                  <td class="qty">${item.quantity}</td>
-                  <td class="price">$${item.price}</td>
-                  <td class="total-cell">$${(item.price * item.quantity).toFixed(2)}</td>
-                </tr>
-              `).join('') || ''}
-            </tbody>
-          </table>
-          
-          <div class="totals">
-            <div class="totals-box">
-              <div class="totals-row">
-                <span>Subtotal:</span>
-                <span>$${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2) || '0.00'}</span>
-              </div>
-              <div class="totals-row">
-                <span>Tax (0%):</span>
-                <span>$0.00</span>
-              </div>
-              <div class="totals-row final">
-                <span>TOTAL:</span>
-                <span>$${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0).toFixed(2) || '0.00'}</span>
-              </div>
+            
+            <div class="footer">
+              <div class="thank-you">Thank you for your business!</div>
+              <div class="note">This order confirmation was generated on ${new Date().toLocaleDateString()} at ${new Date().toLocaleTimeString()}</div>
             </div>
-          </div>
-          
-          <div class="footer">
-            <p>Thank you for your business!</p>
-            <p>Order processed on ${new Date().toLocaleDateString()}</p>
           </div>
         </body>
         </html>
@@ -313,7 +388,7 @@ const Order = () => {
                                     name: order.customerName,
                                     email: order.customerEmail,
                                     phone: order.customerPhone,
-                                    address: order.address || 'N/A'
+                                    address: order.address || 'Address not provided'
                                   },
                                   products: productsWithNames,
                                   totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0

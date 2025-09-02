@@ -198,7 +198,7 @@ const QuotationList = () => {
                                     name: quotation.customerName,
                                     email: quotation.customerEmail,
                                     phone: quotation.customerPhone,
-                                    address: quotation.address || 'N/A'
+                                    address: quotation.address || 'Address not provided'
                                   },
                                   products: productsWithNames,
                                   totalAmount: quotation.totalAmount || 0

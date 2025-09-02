@@ -1,12 +1,14 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'framer-motion'
+import { motion } from 'motion/react'
 import axios from 'axios'
 
 const Order = () => {
   const navigate = useNavigate()
   const [orders, setOrders] = useState([])
   const [loading, setLoading] = useState(true)
+  const [selectedOrder, setSelectedOrder] = useState(null)
+  const [showModal, setShowModal] = useState(false)
 
   useEffect(() => {
     fetchOrders()
@@ -15,12 +17,25 @@ const Order = () => {
   const fetchOrders = async () => {
     try {
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
-      setOrders(Array.isArray(response.data) ? response.data : [])
+      setOrders(response.data.data || [])
     } catch (error) {
       console.error('Error fetching orders:', error)
       setOrders([])
     } finally {
       setLoading(false)
+    }
+  }
+
+  const handleDeleteOrder = async (orderId) => {
+    if (!confirm('Are you sure you want to delete this order?')) return
+    
+    try {
+      await axios.delete(`https://computer-shop-ecru.vercel.app/api/orders/${orderId}`)
+      alert('Order deleted successfully!')
+      fetchOrders()
+    } catch (error) {
+      console.error('Error deleting order:', error)
+      alert('Failed to delete order. Please try again.')
     }
   }
 
@@ -71,8 +86,8 @@ const Order = () => {
                     #{order._id?.slice(-6) || 'N/A'}
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-900">{order.customerName}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{order.email}</td>
-                  <td className="px-6 py-4 text-sm text-gray-500">{order.phone}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{order.customerEmail}</td>
+                  <td className="px-6 py-4 text-sm text-gray-500">{order.customerPhone}</td>
                   <td className="px-6 py-4 text-sm text-gray-500">
                     {order.products?.length || 0} items
                   </td>
@@ -84,11 +99,40 @@ const Order = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <button className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200">
-                        View
+                      <button 
+                        onClick={() => {
+                          navigate('/quotation', {
+                            state: {
+                              orderData: {
+                                customer: {
+                                  name: order.customerName,
+                                  email: order.customerEmail,
+                                  phone: order.customerPhone,
+                                  address: order.address || 'N/A'
+                                },
+                                products: order.items?.map(item => ({
+                                  name: `Product ${item.product}`,
+                                  orderQuantity: item.quantity,
+                                  sellingRate: item.price,
+                                  category: { name: 'N/A' }
+                                })) || [],
+                                totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
+                              }
+                            }
+                          })
+                        }}
+                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs rounded hover:bg-blue-200"
+                      >
+                        View PDF
                       </button>
                       <button className="px-3 py-1 bg-green-100 text-green-700 text-xs rounded hover:bg-green-200">
                         Print
+                      </button>
+                      <button 
+                        onClick={() => handleDeleteOrder(order._id)}
+                        className="px-3 py-1 bg-red-100 text-red-700 text-xs rounded hover:bg-red-200"
+                      >
+                        Delete
                       </button>
                     </div>
                   </td>
@@ -112,6 +156,69 @@ const Order = () => {
           </div>
         )}
       </div>
+
+      {/* Order Details Modal */}
+      {showModal && selectedOrder && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-y-auto">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-xl font-bold text-gray-800">Order Details - {selectedOrder._id}</h3>
+              <button 
+                onClick={() => setShowModal(false)}
+                className="text-gray-500 hover:text-gray-700 text-2xl"
+              >
+                ×
+              </button>
+            </div>
+            
+            <div className="mb-6">
+              <h4 className="font-semibold text-gray-800 mb-3">Order Details</h4>
+              <div className="bg-gray-50 p-4 rounded-lg">
+                <pre className="text-sm text-gray-700 whitespace-pre-wrap">
+                  {JSON.stringify(selectedOrder, null, 2)}
+                </pre>
+              </div>
+            </div>
+
+            {selectedOrder.items && selectedOrder.items.length > 0 && (
+              <div>
+                <h4 className="font-semibold text-gray-800 mb-3">Items</h4>
+                <div className="overflow-x-auto">
+                  <table className="w-full border border-gray-200">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Product ID</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Quantity</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Price</th>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-500">Total</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {selectedOrder.items.map((item, index) => (
+                        <tr key={index} className="border-t">
+                          <td className="px-4 py-2 text-sm text-gray-900">{item.product}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600">{item.quantity}</td>
+                          <td className="px-4 py-2 text-sm text-gray-600">${item.price}</td>
+                          <td className="px-4 py-2 text-sm font-medium text-green-600">${(item.price * item.quantity).toFixed(2)}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+            
+            <div className="mt-6 flex justify-end">
+              <button
+                onClick={() => setShowModal(false)}
+                className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

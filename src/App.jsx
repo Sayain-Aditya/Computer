@@ -7,7 +7,9 @@ import Order from "./Order";
 import AddProduct from "./pages/AddProduct";
 import EditProduct from "./pages/EditProduct";
 import CreateOrder from "./pages/CreateOrder";
+import EditOrder from "./pages/EditOrder";
 import Quotation from "./pages/Quotation";
+import QuotationList from "./pages/QuotationList";
 
 function App() {
   const [sidebarOpen, setSidebarOpen] = useState(true)
@@ -16,7 +18,7 @@ function App() {
     <Router>
       <div className="flex bg-gray-50 min-h-screen">
         <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-        <div className={`${sidebarOpen ? 'ml-64' : 'ml-16'} w-full p-4 transition-all duration-300`}>
+        <div className={`${sidebarOpen ? 'sm:ml-64' : 'sm:ml-16'} w-full p-2 sm:p-4 transition-all duration-300`}>
           <Routes>
             <Route path="/" element={<Navigate to="/categories" replace />} />
             <Route path="/categories" element={<Category />} />
@@ -25,7 +27,9 @@ function App() {
             <Route path="/edit-product/:id" element={<EditProduct />} />
             <Route path="/orders" element={<Order />} />
             <Route path="/create-order" element={<CreateOrder />} />
+            <Route path="/edit-order/:id" element={<EditOrder />} />
             <Route path="/quotation" element={<Quotation />} />
+            <Route path="/quotation-list" element={<QuotationList />} />
           </Routes>
         </div>
       </div>

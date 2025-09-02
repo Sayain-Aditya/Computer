@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { motion } from 'motion/react'
+import { motion } from 'framer-motion'
 import axios from 'axios'
 
 const Order = () => {
@@ -14,7 +14,7 @@ const Order = () => {
 
   const fetchOrders = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders')
+      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
       setOrders(response.data)
     } catch (error) {
       console.error('Error fetching orders:', error)

@@ -1,6 +1,9 @@
 import React, { useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Navigate } from "react-router-dom";
+import { ToastContainer } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 import Sidebar from "./Sidebar";
+import Dashboard from "./Dashboard";
 import Category from "./Category";
 import Product from "./Product";
 import Order from "./Order";
@@ -20,7 +23,8 @@ function App() {
         <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
         <div className={`${sidebarOpen ? 'sm:ml-64' : 'sm:ml-16'} w-full p-2 sm:p-4 transition-all duration-300`}>
           <Routes>
-            <Route path="/" element={<Navigate to="/categories" replace />} />
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/dashboard" element={<Dashboard />} />
             <Route path="/categories" element={<Category />} />
             <Route path="/products" element={<Product />} />
             <Route path="/add-product" element={<AddProduct />} />
@@ -33,6 +37,17 @@ function App() {
           </Routes>
         </div>
       </div>
+      <ToastContainer
+        position="top-right"
+        autoClose={3000}
+        hideProgressBar={false}
+        newestOnTop={false}
+        closeOnClick
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+      />
     </Router>
   )
 }

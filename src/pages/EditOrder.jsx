@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const EditOrder = () => {
@@ -108,7 +109,7 @@ const EditOrder = () => {
 
   const handleUpdateOrder = async () => {
     if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-      alert('Please fill customer details and add products to order')
+      toast.error('Please fill customer details and add products to order')
       return
     }
 
@@ -127,11 +128,36 @@ const EditOrder = () => {
 
     try {
       await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/update/${id}`, orderData)
-      alert('Order updated successfully!')
+      
+      // Update stock for each product in the updated order
+      for (const item of selectedProducts) {
+        try {
+          console.log(`Updating stock for product ${item._id}, reducing by ${item.orderQuantity}`)
+          try {
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
+              quantity: item.orderQuantity
+            })
+            console.log(`Stock update response (update-stock):`, response.data)
+          } catch (err1) {
+            console.log('update-stock failed, trying update endpoint')
+            const currentProduct = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/all`)
+            const product = currentProduct.data.find(p => p._id === item._id)
+            const newQuantity = product.quantity - item.orderQuantity
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
+              quantity: newQuantity
+            })
+            console.log(`Stock update response (update):`, response.data)
+          }
+        } catch (stockError) {
+          console.error(`Error updating stock for product ${item._id}:`, stockError)
+        }
+      }
+      
+      toast.success('Order updated successfully!')
       navigate('/orders')
     } catch (error) {
       console.error('Error updating order:', error)
-      alert('Failed to update order. Please try again.')
+      toast.error('Failed to update order. Please try again.')
     }
   }
 

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const QuotationList = () => {
@@ -54,6 +55,110 @@ const QuotationList = () => {
     }
   }
 
+  const exportToCSV = async () => {
+    try {
+      const [productsResponse, categoriesResponse] = await Promise.all([
+        axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
+        axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      ])
+      const allProducts = productsResponse.data
+      const allCategories = categoriesResponse.data
+      
+      const csvData = []
+      
+      quotations.forEach(quotation => {
+        if (quotation.items && quotation.items.length > 0) {
+          quotation.items.forEach(item => {
+            let productName = 'Unknown Product'
+            let categoryName = 'N/A'
+            
+            if (typeof item.product === 'object' && item.product?.name) {
+              productName = item.product.name
+              if (item.product.category?.name) {
+                categoryName = item.product.category.name
+              } else if (item.product.category) {
+                const category = allCategories.find(c => c._id === item.product.category || c._id === item.product.category._id)
+                categoryName = category?.name || 'N/A'
+              }
+            } else if (typeof item.product === 'string') {
+              const product = allProducts.find(p => p._id === item.product)
+              productName = product?.name || `Product ${item.product}`
+              if (product?.category?.name) {
+                categoryName = product.category.name
+              } else if (product?.category) {
+                const category = allCategories.find(c => c._id === product.category || c._id === product.category._id)
+                categoryName = category?.name || 'N/A'
+              }
+            }
+            
+            csvData.push({
+              'Quotation ID': `QT-${quotation._id?.slice(-6)}`,
+              'Quotation Date': new Date(quotation.createdAt).toLocaleDateString(),
+              'Customer Name': quotation.customerName || '',
+              'Customer Email': quotation.customerEmail || '',
+              'Customer Phone': quotation.customerPhone || '',
+              'Customer Address': quotation.address || '',
+              'Product Name': productName,
+              'Product Category': categoryName,
+              'Quantity': item.quantity || 0,
+              'Unit Price': item.price || 0,
+              'Line Total': (item.quantity * item.price) || 0,
+              'Quotation Total': quotation.totalAmount || 0,
+              'Status': quotation.status || 'Pending'
+            })
+          })
+        } else {
+          csvData.push({
+            'Quotation ID': `QT-${quotation._id?.slice(-6)}`,
+            'Quotation Date': new Date(quotation.createdAt).toLocaleDateString(),
+            'Customer Name': quotation.customerName || '',
+            'Customer Email': quotation.customerEmail || '',
+            'Customer Phone': quotation.customerPhone || '',
+            'Customer Address': quotation.address || '',
+            'Product Name': 'No items',
+            'Product Category': 'N/A',
+            'Quantity': 0,
+            'Unit Price': 0,
+            'Line Total': 0,
+            'Quotation Total': quotation.totalAmount || 0,
+            'Status': quotation.status || 'Pending'
+          })
+        }
+      })
+      
+      const csvHeaders = ['Quotation ID', 'Quotation Date', 'Customer Name', 'Customer Email', 'Customer Phone', 'Customer Address', 'Product Name', 'Product Category', 'Quantity', 'Unit Price', 'Line Total', 'Quotation Total', 'Status']
+      
+      const escapeCsvValue = (value) => {
+        const stringValue = String(value || '')
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }
+      
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvData.map(row => csvHeaders.map(header => escapeCsvValue(row[header])).join(','))
+      ].join('\r\n')
+      
+      const BOM = '\uFEFF'
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `quotations-export-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      toast.success('Quotations exported to CSV successfully!')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export quotations. Please try again.')
+    }
+  }
+
   if (loading) {
     return <div className="text-center py-8">Loading quotations...</div>
   }
@@ -67,14 +172,24 @@ const QuotationList = () => {
               <h1 className="text-3xl font-bold mb-2 text-gray-800">Quotation List</h1>
               <p className="text-gray-600 text-lg">View and manage customer quotations</p>
             </div>
-            <motion.button 
-              onClick={() => navigate('/create-order')}
-              className="px-6 py-3 bg-gray-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              + Create New Quotation
-            </motion.button>
+            <div className="flex gap-3">
+              <motion.button 
+                onClick={exportToCSV}
+                className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                📊 Export CSV
+              </motion.button>
+              <motion.button 
+                onClick={() => navigate('/create-order')}
+                className="px-6 py-3 bg-gray-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                + Create New Quotation
+              </motion.button>
+            </div>
           </div>
         </div>
         
@@ -129,7 +244,7 @@ const QuotationList = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">${quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="text-sm font-semibold text-gray-800">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${

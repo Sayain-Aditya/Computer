@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const EditProduct = () => {
@@ -42,7 +43,7 @@ const EditProduct = () => {
       const product = response.data.find(p => p._id === id)
       
       if (!product) {
-        alert('Product not found')
+        toast.error('Product not found')
         navigate('/products')
         return
       }
@@ -62,7 +63,7 @@ const EditProduct = () => {
       setLoading(false)
     } catch (error) {
       console.error('Error fetching product:', error)
-      alert('Failed to load product')
+      toast.error('Failed to load product')
       navigate('/products')
     }
   }
@@ -71,11 +72,11 @@ const EditProduct = () => {
     e.preventDefault()
     try {
       await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${id}`, formData)
-      alert('Product updated successfully!')
+      toast.success('Product updated successfully!')
       navigate('/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('Failed to update product')
+      toast.error('Failed to update product')
     }
   }
 

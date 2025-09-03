@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const Product = () => {
@@ -9,16 +10,23 @@ const Product = () => {
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [editId, setEditId] = useState(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const [totalPages, setTotalPages] = useState(1)
+  const [searchTerm, setSearchTerm] = useState('')
 
   useEffect(() => {
-    fetchProducts()
+    fetchProducts(1)
     fetchCategories()
   }, [])
 
-  const fetchProducts = async () => {
+  const fetchProducts = async (page = 1) => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
-      setProducts(response.data)
+      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/all?page=${page}`)
+      console.log('API Response:', response.data)
+      setProducts(response.data.products || response.data)
+      setTotalPages(response.data.totalPages || 1)
+      setCurrentPage(page)
+      console.log('Total Pages:', response.data.totalPages)
     } catch (error) {
       console.error('Error fetching products:', error)
     }
@@ -47,11 +55,72 @@ const Product = () => {
     }
   }
 
+  const exportToCSV = () => {
+    try {
+      const csvData = products.map(product => ({
+        'Product Name': product.name || '',
+        'Model Number': product.modelNumber || '',
+        'Brand': product.brand || '',
+        'Category': product.category?.name || 'Uncategorized',
+        'Purchase Rate': product.purchaseRate || 0,
+        'Selling Rate': product.sellingRate || 0,
+        'Quantity': product.quantity || 0,
+        'Status': product.status || 'Active',
+        'Description': (product.description || '').replace(/\n/g, ' ').replace(/\r/g, ' '),
+        'Created Date': product.createdAt ? new Date(product.createdAt).toISOString().split('T')[0] : 'N/A'
+      }))
+      
+      const csvHeaders = ['Product Name', 'Model Number', 'Brand', 'Category', 'Purchase Rate', 'Selling Rate', 'Quantity', 'Status', 'Description', 'Created Date']
+      
+      const escapeCsvValue = (value) => {
+        const stringValue = String(value || '')
+        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
+          return `"${stringValue.replace(/"/g, '""')}"`
+        }
+        return stringValue
+      }
+      
+      const csvContent = [
+        csvHeaders.join(','),
+        ...csvData.map(row => csvHeaders.map(header => escapeCsvValue(row[header])).join(','))
+      ].join('\r\n')
+      
+      const BOM = '\uFEFF'
+      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = `products-export-${new Date().toISOString().split('T')[0]}.csv`
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      window.URL.revokeObjectURL(url)
+      
+      toast.success('Products exported to CSV successfully!')
+    } catch (error) {
+      console.error('Export error:', error)
+      toast.error('Failed to export products. Please try again.')
+    }
+  }
+
 
 
   const getFilteredProducts = () => {
-    if (!selectedCategory) return products
-    return products.filter(product => product.category?._id === selectedCategory)
+    let filtered = products
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(product => product.category?._id === selectedCategory)
+    }
+    
+    if (searchTerm) {
+      filtered = filtered.filter(product => 
+        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        product.modelNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+    
+    return filtered
   }
 
   return (
@@ -63,23 +132,40 @@ const Product = () => {
               <h1 className="text-3xl font-bold mb-2 text-gray-800">Products</h1>
               <p className="text-gray-600 text-lg">Manage your computer parts inventory</p>
             </div>
-            <motion.button 
-              onClick={() => navigate('/add-product')}
-              className="px-6 py-3 bg-gray-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              + Add Product
-            </motion.button>
+            <div className="flex gap-3">
+              <motion.button 
+                onClick={exportToCSV}
+                className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                📊 Export CSV
+              </motion.button>
+              <motion.button 
+                onClick={() => navigate('/add-product')}
+                className="px-6 py-3 bg-gray-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                + Add Product
+              </motion.button>
+            </div>
           </div>
         </div>
         
-        <div className="mt-6 flex justify-between items-center">
-          <div className="flex items-center gap-4">
+        <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full sm:w-64"
+            />
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
-              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm"
+              className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full sm:w-auto"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -88,9 +174,9 @@ const Product = () => {
                 </option>
               ))}
             </select>
-            <div className="text-sm text-gray-500">
-              {getFilteredProducts().length} products found
-            </div>
+          </div>
+          <div className="text-sm text-gray-500">
+            {getFilteredProducts().length} products found
           </div>
         </div>
       </div>
@@ -139,7 +225,7 @@ const Product = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{product.brand || 'N/A'}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">${product.sellingRate}</span>
+                    <span className="text-sm font-semibold text-gray-800">₹{product.sellingRate}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${
@@ -194,6 +280,39 @@ const Product = () => {
           </div>
         )}
       </motion.div>
+      
+      {/* Pagination */}
+      <div className="flex justify-center items-center mt-6 gap-2">
+          <button
+            onClick={() => fetchProducts(currentPage - 1)}
+            disabled={currentPage === 1}
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Previous
+          </button>
+          
+          {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+            <button
+              key={page}
+              onClick={() => fetchProducts(page)}
+              className={`px-3 py-2 rounded ${
+                currentPage === page
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              {page}
+            </button>
+          ))}
+          
+          <button
+            onClick={() => fetchProducts(currentPage + 1)}
+            disabled={currentPage === totalPages}
+            className="px-3 py-2 bg-gray-100 text-gray-700 rounded hover:bg-gray-200 disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            Next
+          </button>
+        </div>
     </div>
   )
 }

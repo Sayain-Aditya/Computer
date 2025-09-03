@@ -17,7 +17,10 @@ const Order = () => {
   const fetchOrders = async () => {
     try {
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
-      setOrders(response.data.data || [])
+      const ordersData = response.data.data || []
+      // Sort orders by creation date (newest first)
+      const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      setOrders(sortedOrders)
     } catch (error) {
       console.error('Error fetching orders:', error)
       setOrders([])

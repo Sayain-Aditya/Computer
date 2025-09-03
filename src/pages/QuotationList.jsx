@@ -17,7 +17,9 @@ const QuotationList = () => {
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
       // Filter only quotations (type: 'Quotation')
       const quotationData = response.data.data?.filter(order => order.type === 'Quotation') || []
-      setQuotations(quotationData)
+      // Sort quotations by creation date (newest first)
+      const sortedQuotations = quotationData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      setQuotations(sortedQuotations)
     } catch (error) {
       console.error('Error fetching quotations:', error)
       setQuotations([])

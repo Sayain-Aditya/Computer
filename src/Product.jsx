@@ -124,15 +124,15 @@ const Product = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
-          <div className="flex justify-between items-center">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-gray-800">Products</h1>
-              <p className="text-gray-600 text-lg">Manage your computer parts inventory</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-800">Products</h1>
+              <p className="text-gray-600 text-base sm:text-lg">Manage your computer parts inventory</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <motion.button 
                 onClick={exportToCSV}
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
@@ -153,8 +153,8 @@ const Product = () => {
           </div>
         </div>
         
-        <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
+        <div className="mt-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4 w-full lg:w-auto">
             <input
               type="text"
               placeholder="Search products..."
@@ -175,7 +175,7 @@ const Product = () => {
               ))}
             </select>
           </div>
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 w-full lg:w-auto text-left lg:text-right">
             {getFilteredProducts().length} products found
           </div>
         </div>
@@ -183,8 +183,73 @@ const Product = () => {
       
 
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {getFilteredProducts().map((product, index) => (
+          <motion.div
+            key={product._id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">{product.name}</h3>
+                <p className="text-sm text-gray-500">{product.modelNumber || 'No model'}</p>
+              </div>
+              <span className="text-lg font-bold text-gray-900">₹{product.sellingRate}</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+              <div>
+                <span className="text-gray-500">Category:</span>
+                <p className="font-medium">{product.category?.name || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Brand:</span>
+                <p className="font-medium">{product.brand || 'N/A'}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Stock:</span>
+                <p className={`font-medium ${
+                  product.quantity > 10 ? 'text-emerald-600' :
+                  product.quantity > 0 ? 'text-amber-600' : 'text-rose-600'
+                }`}>{product.quantity}</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Status:</span>
+                <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium ${
+                  product.status === 'Active' ? 'bg-emerald-50 text-emerald-600' :
+                  product.status === 'Inactive' ? 'bg-gray-50 text-gray-600' :
+                  'bg-rose-50 text-rose-600'
+                }`}>
+                  {product.status}
+                </span>
+              </div>
+            </div>
+            
+            <div className="flex gap-2">
+              <button 
+                onClick={() => handleEdit(product)} 
+                className="flex-1 px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+              >
+                Edit
+              </button>
+              <button 
+                onClick={() => handleDelete(product._id)} 
+                className="flex-1 px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
       <motion.div 
-        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -210,7 +275,6 @@ const Product = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ backgroundColor: "#f9fafb" }}
                 >
                   <td className="px-6 py-4">
                     <div>
@@ -246,22 +310,18 @@ const Product = () => {
                   </td>
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
-                      <motion.button 
+                      <button 
                         onClick={() => handleEdit(product)} 
                         className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                       >
                         Edit
-                      </motion.button>
-                      <motion.button 
+                      </button>
+                      <button 
                         onClick={() => handleDelete(product._id)} 
                         className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg hover:bg-rose-100"
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
                       >
                         Delete
-                      </motion.button>
+                      </button>
                     </div>
                   </td>
                 </motion.tr>
@@ -282,7 +342,7 @@ const Product = () => {
       </motion.div>
       
       {/* Pagination */}
-      <div className="flex justify-center items-center mt-6 gap-2">
+      <div className="flex flex-wrap justify-center items-center mt-6 gap-2">
           <button
             onClick={() => fetchProducts(currentPage - 1)}
             disabled={currentPage === 1}

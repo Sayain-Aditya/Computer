@@ -252,11 +252,11 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="p-6">
-      <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
+    <div className="p-4 sm:p-6">
+      <h1 className="text-2xl sm:text-3xl font-bold mb-6">Dashboard</h1>
       
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <h3 className="text-lg font-semibold text-gray-600">Total Categories</h3>
           <p className="text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
@@ -276,17 +276,17 @@ const Dashboard = () => {
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">Yearly Orders</h3>
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Yearly Orders</h3>
             <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
           </div>
           <div className="mb-4">
             <select
               value={selectedOrderCategory}
               onChange={(e) => setSelectedOrderCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -296,21 +296,21 @@ const Dashboard = () => {
               ))}
             </select>
           </div>
-          <div className="h-48">
+          <div className="h-48 sm:h-64">
             <Bar data={ordersChartData} options={barChartOptions} />
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100">
-          <div className="flex items-center justify-between mb-4">
-            <h3 className="text-xl font-bold text-gray-800">Yearly Sales</h3>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Yearly Sales</h3>
             <div className="w-3 h-3 bg-green-500 rounded-full"></div>
           </div>
           <div className="mb-4">
             <select
               value={selectedSalesCategory}
               onChange={(e) => setSelectedSalesCategory(e.target.value)}
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -320,20 +320,20 @@ const Dashboard = () => {
               ))}
             </select>
           </div>
-          <div className="h-48">
+          <div className="h-48 sm:h-64">
             <Bar data={salesChartData} options={barChartOptions} />
           </div>
         </div>
         
-        <div className="bg-white p-6 rounded-xl shadow-lg border border-gray-100 lg:col-span-2">
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-800">Products by Category</h3>
+        <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100 lg:col-span-2">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-2">
+            <h3 className="text-lg sm:text-xl font-bold text-gray-800">Products by Category</h3>
             <div className="flex items-center space-x-2">
               <span className="text-sm text-gray-500">Distribution</span>
               <div className="w-3 h-3 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full"></div>
             </div>
           </div>
-          <div className="h-48">
+          <div className="h-48 sm:h-64">
             <Doughnut data={categoryChartData} options={doughnutOptions} />
           </div>
         </div>

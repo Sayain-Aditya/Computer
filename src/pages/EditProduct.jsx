@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const EditProduct = () => {
@@ -37,12 +38,11 @@ const EditProduct = () => {
 
   const fetchProduct = async () => {
     try {
-      // First try to get all products and find the specific one
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
       const product = response.data.find(p => p._id === id)
       
       if (!product) {
-        alert('Product not found')
+        toast.error('Product not found')
         navigate('/products')
         return
       }
@@ -62,7 +62,7 @@ const EditProduct = () => {
       setLoading(false)
     } catch (error) {
       console.error('Error fetching product:', error)
-      alert('Failed to load product')
+      toast.error('Failed to load product')
       navigate('/products')
     }
   }
@@ -71,11 +71,11 @@ const EditProduct = () => {
     e.preventDefault()
     try {
       await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${id}`, formData)
-      alert('Product updated successfully!')
+      toast.success('Product updated successfully!')
       navigate('/products')
     } catch (error) {
       console.error('Error updating product:', error)
-      alert('Failed to update product')
+      toast.error('Failed to update product')
     }
   }
 
@@ -103,15 +103,15 @@ const EditProduct = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="max-w-4xl mx-auto px-4 sm:px-6">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Edit Product</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Edit Product</h1>
           <p className="text-gray-600 text-sm mt-1">Update product information</p>
         </div>
         <button 
           onClick={() => navigate('/products')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 whitespace-nowrap"
         >
           Back to Products
         </button>
@@ -231,7 +231,7 @@ const EditProduct = () => {
           <div className="md:col-span-2">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Product Attributes</h4>
             
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <input
                 type="text"
                 placeholder="Attribute name (e.g., Socket)"
@@ -249,22 +249,22 @@ const EditProduct = () => {
               <button
                 type="button"
                 onClick={addAttribute}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
               >
                 Add
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(formData.attributes).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
-                  <span className="text-sm">
+                  <span className="text-sm truncate mr-2">
                     <strong>{key}:</strong> {value}
                   </span>
                   <button
                     type="button"
                     onClick={() => removeAttribute(key)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="text-red-600 hover:text-red-800 text-sm whitespace-nowrap"
                   >
                     Remove
                   </button>
@@ -273,17 +273,17 @@ const EditProduct = () => {
             </div>
           </div>
 
-          <div className="md:col-span-2 flex gap-3 pt-4">
+          <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-4">
             <button 
               type="submit" 
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
             >
               Update Product
             </button>
             <button 
-              type="button" 
+              type="button"
               onClick={() => navigate('/products')}
-              className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+              className="px-6 py-3 bg-gray-500 text-white rounded hover:bg-gray-600 font-medium"
             >
               Cancel
             </button>

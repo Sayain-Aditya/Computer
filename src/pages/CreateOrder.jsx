@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const CreateOrder = () => {
@@ -69,7 +70,7 @@ const CreateOrder = () => {
       setCompatibleProducts(compatibleProducts)
       setShowCompatible(true)
     } else {
-      alert('No compatible products found in the current list')
+      toast.info('No compatible products found in the current list')
     }
   }
 
@@ -140,7 +141,7 @@ const CreateOrder = () => {
 
   const handleSubmitOrder = async () => {
     if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-      alert('Please fill customer details and add products to order')
+      toast.error('Please fill customer details and add products to order')
       return
     }
 
@@ -159,11 +160,34 @@ const CreateOrder = () => {
 
     try {
       await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
-      alert('Order created successfully!')
+      
+      // Update stock for each product in the order
+      for (const item of selectedProducts) {
+        try {
+          console.log(`Updating stock for product ${item._id}, reducing by ${item.orderQuantity}`)
+          // Try both API endpoints to see which one works
+          try {
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
+              quantity: item.orderQuantity
+            })
+            console.log(`Stock update response (update-stock):`, response.data)
+          } catch (err1) {
+            console.log('update-stock failed, trying update endpoint')
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
+              quantity: item.quantity - item.orderQuantity
+            })
+            console.log(`Stock update response (update):`, response.data)
+          }
+        } catch (stockError) {
+          console.error(`Error updating stock for product ${item._id}:`, stockError)
+        }
+      }
+      
+      toast.success('Order created successfully!')
       navigate('/orders')
     } catch (error) {
       console.error('Error creating order:', error)
-      alert('Failed to create order. Please try again.')
+      toast.error('Failed to create order. Please try again.')
     }
   }
 
@@ -229,7 +253,7 @@ const CreateOrder = () => {
                   <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-gray-500">${item.sellingRate} each</p>
+                      <p className="text-xs text-gray-500">₹{item.sellingRate} each</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -251,7 +275,7 @@ const CreateOrder = () => {
                 <div className="border-t pt-3 mt-4">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
-                    <span className="text-green-600">${getTotalAmount().toFixed(2)}</span>
+                    <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
                   </div>
                 </div>
                 <div className="flex gap-2 mt-4">
@@ -369,7 +393,7 @@ const CreateOrder = () => {
                       </td>
                       <td className="hidden md:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
                       <td className="hidden lg:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.brand || 'N/A'}</td>
-                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-green-600">${product.sellingRate}</td>
+                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-green-600">₹{product.sellingRate}</td>
                       <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.quantity}</td>
                       <td className="hidden lg:table-cell px-2 sm:px-4 py-3">
                         <span className={`px-2 py-1 rounded text-xs ${
@@ -444,8 +468,8 @@ const CreateOrder = () => {
                 <p className="text-sm text-gray-600 mb-2"><strong>Category:</strong> {selectedProduct.category?.name || 'N/A'}</p>
                 <p className="text-sm text-gray-600 mb-2"><strong>Brand:</strong> {selectedProduct.brand || 'N/A'}</p>
                 <p className="text-sm text-gray-600 mb-2"><strong>Model:</strong> {selectedProduct.modelNumber || 'N/A'}</p>
-                <p className="text-sm text-gray-600 mb-2"><strong>Price:</strong> <span className="text-green-600 font-medium">${selectedProduct.sellingRate}</span></p>
-                <p className="text-sm text-gray-600 mb-2"><strong>Cost:</strong> ${selectedProduct.costRate || 'N/A'}</p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Price:</strong> <span className="text-green-600 font-medium">₹{selectedProduct.sellingRate}</span></p>
+                <p className="text-sm text-gray-600 mb-2"><strong>Cost:</strong> ₹{selectedProduct.costRate || 'N/A'}</p>
               </div>
               <div>
                 <p className="text-sm text-gray-600 mb-2"><strong>Stock:</strong> {selectedProduct.quantity}</p>

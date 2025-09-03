@@ -66,19 +66,19 @@ const AddProduct = () => {
 
   return (
     <motion.div 
-      className="max-w-4xl mx-auto"
+      className="max-w-4xl mx-auto px-4 sm:px-6"
       initial={{ opacity: 0, x: -20 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ duration: 0.5 }}
     >
-      <div className="mb-6 flex justify-between items-center">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Add New Product</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Add New Product</h1>
           <p className="text-gray-600 text-sm mt-1">Add a new product to your inventory</p>
         </div>
         <motion.button 
           onClick={() => navigate('/products')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 whitespace-nowrap"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
@@ -205,7 +205,7 @@ const AddProduct = () => {
           <div className="md:col-span-2">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Product Attributes</h4>
             
-            <div className="flex gap-2 mb-3">
+            <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <input
                 type="text"
                 placeholder="Attribute name (e.g., Socket)"
@@ -223,22 +223,22 @@ const AddProduct = () => {
               <button
                 type="button"
                 onClick={addAttribute}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
               >
                 Add
               </button>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(formData.attributes).map(([key, value]) => (
                 <div key={key} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
-                  <span className="text-sm">
+                  <span className="text-sm truncate mr-2">
                     <strong>{key}:</strong> {value}
                   </span>
                   <button
                     type="button"
                     onClick={() => removeAttribute(key)}
-                    className="text-red-600 hover:text-red-800 text-sm"
+                    className="text-red-600 hover:text-red-800 text-sm whitespace-nowrap"
                   >
                     Remove
                   </button>
@@ -247,10 +247,10 @@ const AddProduct = () => {
             </div>
           </div>
 
-          <div className="md:col-span-2 flex gap-3 pt-4">
+          <div className="md:col-span-2 flex flex-col sm:flex-row gap-3 pt-4">
             <motion.button 
               type="submit" 
-              className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
+              className="px-6 py-3 bg-blue-600 text-white rounded hover:bg-blue-700 font-medium"
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >

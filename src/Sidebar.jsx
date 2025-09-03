@@ -6,20 +6,26 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
   const location = useLocation()
   
   const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'categories', label: 'Categories', path: '/categories' },
     { id: 'products', label: 'Products', path: '/products' },
     { id: 'orders', label: 'Orders', path: '/orders' },
-    { id: 'quotations', label: 'Quotation List', path: '/quotation-list' },
-    { id: 'dashboard', label: 'Dashboard', path: '/dashboard' }
+    { id: 'quotations', label: 'Quotation List', path: '/quotation-list' }
   ]
 
   return (
-    <motion.div 
-      className={`sidebar ${isOpen ? 'w-64' : 'w-16'} h-screen bg-slate-900 text-white fixed left-0 top-0 shadow-lg transition-all duration-300 z-50 ${isOpen ? 'block' : 'hidden sm:block'}`}
-      initial={{ x: -250 }}
-      animate={{ x: 0 }}
-      transition={{ duration: 0.5 }}
-    >
+    <>
+      
+      <motion.div 
+        className={`sidebar h-screen bg-slate-900 text-white fixed left-0 top-0 shadow-lg transition-all duration-300 z-30 ${
+          isOpen 
+            ? 'w-64 translate-x-0' 
+            : 'w-64 -translate-x-full lg:w-16 lg:translate-x-0'
+        }`}
+        initial={{ x: -250 }}
+        animate={{ x: 0 }}
+        transition={{ duration: 0.5 }}
+      >
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
           <h2 className="text-xl font-bold text-white m-0">
@@ -31,11 +37,15 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           onClick={() => setIsOpen(!isOpen)}
           className="p-2 rounded-lg hover:bg-slate-800 transition-colors"
         >
-          <div className="w-5 h-5 flex flex-col justify-center space-y-1">
-            <div className="w-full h-0.5 bg-white"></div>
-            <div className="w-full h-0.5 bg-white"></div>
-            <div className="w-full h-0.5 bg-white"></div>
-          </div>
+          {isOpen ? (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          ) : (
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          )}
         </button>
       </div>
       
@@ -49,6 +59,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
           >
             <Link
               to={item.path}
+              onClick={() => window.innerWidth < 1024 && setIsOpen(false)}
               className={`flex items-center mx-2 my-1 px-3 py-3 rounded text-sm ${
                 location.pathname === item.path
                   ? 'bg-slate-700 text-white font-medium' 
@@ -73,6 +84,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
         <p className="text-xs text-gray-400 m-0">v1.0.0</p>
       </div>
     </motion.div>
+    </>
   )
 }
 

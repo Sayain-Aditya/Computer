@@ -1,6 +1,7 @@
 import React, { useRef } from 'react'
 import { useLocation, useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import html2canvas from 'html2canvas'
 import jsPDF from 'jspdf'
 
@@ -38,7 +39,7 @@ const Quotation = () => {
     window.open(whatsappUrl, '_blank')
     
     // Show instruction to user
-    alert('WhatsApp opened with quotation details.\n\nTo share PDF:\n1. Use the Print button\n2. Select "Save as PDF"\n3. Save the PDF\n4. Attach it to your WhatsApp message')
+    toast.info('WhatsApp opened with quotation details. To share PDF: 1. Use the Print button 2. Select "Save as PDF" 3. Save the PDF 4. Attach it to your WhatsApp message')
   }
 
   return (

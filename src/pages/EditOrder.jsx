@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const EditOrder = () => {
@@ -108,7 +109,7 @@ const EditOrder = () => {
 
   const handleUpdateOrder = async () => {
     if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-      alert('Please fill customer details and add products to order')
+      toast.error('Please fill customer details and add products to order')
       return
     }
 
@@ -127,11 +128,36 @@ const EditOrder = () => {
 
     try {
       await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/update/${id}`, orderData)
-      alert('Order updated successfully!')
+      
+      // Update stock for each product in the updated order
+      for (const item of selectedProducts) {
+        try {
+          console.log(`Updating stock for product ${item._id}, reducing by ${item.orderQuantity}`)
+          try {
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
+              quantity: item.orderQuantity
+            })
+            console.log(`Stock update response (update-stock):`, response.data)
+          } catch (err1) {
+            console.log('update-stock failed, trying update endpoint')
+            const currentProduct = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/all`)
+            const product = currentProduct.data.find(p => p._id === item._id)
+            const newQuantity = product.quantity - item.orderQuantity
+            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
+              quantity: newQuantity
+            })
+            console.log(`Stock update response (update):`, response.data)
+          }
+        } catch (stockError) {
+          console.error(`Error updating stock for product ${item._id}:`, stockError)
+        }
+      }
+      
+      toast.success('Order updated successfully!')
       navigate('/orders')
     } catch (error) {
       console.error('Error updating order:', error)
-      alert('Failed to update order. Please try again.')
+      toast.error('Failed to update order. Please try again.')
     }
   }
 
@@ -140,23 +166,23 @@ const EditOrder = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-4">
-      <div className="mb-6 flex justify-between items-center">
+    <div className="max-w-7xl mx-auto p-4 sm:p-6">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Edit Order</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Edit Order</h1>
           <p className="text-gray-600 text-sm mt-1">Update order details</p>
         </div>
         <button 
           onClick={() => navigate('/orders')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="w-full sm:w-auto px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 whitespace-nowrap"
         >
           Back to Orders
         </button>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Customer Info */}
-        <div className="lg:col-span-1">
+        <div className="xl:col-span-1 order-2 xl:order-1">
           <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
             <div className="space-y-4">
@@ -201,7 +227,7 @@ const EditOrder = () => {
                   <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
-                      <p className="text-xs text-gray-500">${item.sellingRate} each</p>
+                      <p className="text-xs text-gray-500">₹{item.sellingRate} each</p>
                     </div>
                     <div className="flex items-center gap-2">
                       <button
@@ -223,7 +249,7 @@ const EditOrder = () => {
                 <div className="border-t pt-3 mt-4">
                   <div className="flex justify-between font-bold text-lg">
                     <span>Total:</span>
-                    <span className="text-green-600">${getTotalAmount().toFixed(2)}</span>
+                    <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
                   </div>
                 </div>
                 <motion.button
@@ -240,17 +266,17 @@ const EditOrder = () => {
         </div>
 
         {/* Products Table */}
-        <div className="lg:col-span-2">
+        <div className="xl:col-span-2 order-1 xl:order-2">
           <h3 className="text-lg font-medium text-gray-800 mb-4">Add More Products</h3>
           <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
             <div className="overflow-x-auto">
-              <table className="w-full">
+              <table className="w-full min-w-[500px]">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="hidden sm:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
@@ -262,14 +288,14 @@ const EditOrder = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: index * 0.05 }}
                     >
-                      <td className="px-4 py-3 text-sm font-medium text-gray-900">{product.name}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">${product.sellingRate}</td>
-                      <td className="px-4 py-3 text-sm text-gray-500">{product.quantity}</td>
-                      <td className="px-4 py-3">
+                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-900">{product.name}</td>
+                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-green-600">₹{product.sellingRate}</td>
+                      <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.quantity}</td>
+                      <td className="px-2 sm:px-4 py-3">
                         <button
                           onClick={() => addToOrder(product)}
                           disabled={product.quantity === 0}
-                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed whitespace-nowrap"
                         >
                           Add
                         </button>

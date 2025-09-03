@@ -54,7 +54,12 @@ const CreateOrder = () => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
       const compatibleData = response.data.compatibleProducts || []
-      setCompatibleProducts(compatibleData)
+      const selectedMotherboard = response.data.product
+      
+      // Include the selected motherboard in the display
+      const productsToShow = selectedMotherboard ? [selectedMotherboard, ...compatibleData] : compatibleData
+      
+      setCompatibleProducts(productsToShow)
       setShowCompatible(true)
       if (compatibleData.length === 0) {
         toast.info('No compatible products found')

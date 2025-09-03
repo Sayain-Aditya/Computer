@@ -23,8 +23,13 @@ const EditOrder = () => {
 
   const fetchOrder = async () => {
     try {
-      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get`)
-      const order = response.data.data?.find(o => o._id === id)
+      const [orderResponse, productsResponse] = await Promise.all([
+        axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get`),
+        axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+      ])
+      
+      const order = orderResponse.data.data?.find(o => o._id === id)
+      const allProducts = productsResponse.data
       
       if (order) {
         setCustomerInfo({
@@ -34,13 +39,27 @@ const EditOrder = () => {
           address: order.address || ''
         })
         
-        // Convert order items to selected products format
-        const orderProducts = order.items?.map(item => ({
-          _id: item.product,
-          name: `Product ${item.product}`,
-          sellingRate: item.price,
-          orderQuantity: item.quantity
-        })) || []
+        // Convert order items to selected products format with actual product names
+        const orderProducts = order.items?.map(item => {
+          let productName = 'Unknown Product'
+          let productId = item.product
+          
+          if (typeof item.product === 'object' && item.product?.name) {
+            productName = item.product.name
+            productId = item.product._id
+          } else if (typeof item.product === 'string') {
+            const product = allProducts.find(p => p._id === item.product)
+            productName = product?.name || `Product ${item.product}`
+            productId = item.product
+          }
+          
+          return {
+            _id: productId,
+            name: productName,
+            sellingRate: item.price,
+            orderQuantity: item.quantity
+          }
+        }) || []
         
         setSelectedProducts(orderProducts)
       }

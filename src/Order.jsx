@@ -263,15 +263,15 @@ const Order = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
-          <div className="flex justify-between items-center">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-gray-800">Orders</h1>
-              <p className="text-gray-600 text-lg">View and manage customer orders</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-800">Orders</h1>
+              <p className="text-gray-600 text-base sm:text-lg">View and manage customer orders</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <motion.button 
                 onClick={exportToCSV}
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
@@ -292,22 +292,141 @@ const Order = () => {
           </div>
         </div>
         
-        <div className="mt-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+        <div className="mt-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
           <input
             type="text"
             placeholder="Search orders by customer name, email, or order ID..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full sm:w-96"
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full lg:w-96"
           />
-          <div className="text-sm text-gray-500">
+          <div className="text-sm text-gray-500 w-full lg:w-auto text-left lg:text-right">
             Showing {getFilteredOrders().length} orders
           </div>
         </div>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {getFilteredOrders().map((order, index) => (
+          <motion.div
+            key={order._id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">#{order._id?.slice(-6) || 'N/A'}</h3>
+                <p className="text-sm text-gray-600">{order.customerName}</p>
+                <p className="text-xs text-gray-500">{order.customerEmail}</p>
+              </div>
+              <span className="text-lg font-bold text-gray-900">₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+              <div>
+                <span className="text-gray-500">Items:</span>
+                <p className="font-medium">{order.items?.length || 0} items</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Date:</span>
+                <p className="font-medium">{new Date(order.createdAt).toLocaleDateString()}</p>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-2">
+              <button 
+                onClick={async () => {
+                  try {
+                    const [productsResponse, categoriesResponse] = await Promise.all([
+                      axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
+                      axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+                    ])
+                    const allProducts = productsResponse.data
+                    const allCategories = categoriesResponse.data
+                    
+                    const productsWithNames = order.items?.map(item => {
+                      let productName = 'Unknown Product'
+                      let categoryName = 'N/A'
+                      
+                      if (typeof item.product === 'object' && item.product?.name) {
+                        productName = item.product.name
+                        if (item.product.category?.name) {
+                          categoryName = item.product.category.name
+                        } else if (item.product.category) {
+                          const category = allCategories.find(c => c._id === item.product.category)
+                          categoryName = category?.name || 'N/A'
+                        }
+                      } else if (typeof item.product === 'string') {
+                        const product = allProducts.find(p => p._id === item.product)
+                        productName = product?.name || `Product ${item.product}`
+                        if (product?.category?.name) {
+                          categoryName = product.category.name
+                        } else if (product?.category) {
+                          const category = allCategories.find(c => c._id === product.category)
+                          categoryName = category?.name || 'N/A'
+                        }
+                      }
+                      
+                      return {
+                        name: productName,
+                        orderQuantity: item.quantity,
+                        sellingRate: item.price,
+                        category: { name: categoryName }
+                      }
+                    }) || []
+                    
+                    navigate('/quotation', {
+                      state: {
+                        orderData: {
+                          customer: {
+                            name: order.customerName,
+                            email: order.customerEmail,
+                            phone: order.customerPhone,
+                            address: order.address || 'Address not provided'
+                          },
+                          products: productsWithNames,
+                          totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
+                        }
+                      }
+                    })
+                  } catch (error) {
+                    console.error('Error fetching products:', error)
+                    toast.error('Failed to load product details. Please try again.')
+                  }
+                }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+              >
+                View PDF
+              </button>
+              <button 
+                onClick={() => handlePrintOrder(order)}
+                className="px-3 py-2 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100"
+              >
+                Print
+              </button>
+              <button 
+                onClick={() => navigate(`/edit-order/${order._id}`)}
+                className="px-3 py-2 bg-amber-50 text-amber-600 text-sm font-medium rounded-lg hover:bg-amber-100"
+              >
+                Edit
+              </button>
+              <button 
+                onClick={() => handleDeleteOrder(order._id)}
+                className="px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
       <motion.div 
-        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -332,7 +451,6 @@ const Order = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ backgroundColor: "#f9fafb" }}
                 >
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">#{order._id?.slice(-6) || 'N/A'}</div>
@@ -367,28 +485,23 @@ const Order = () => {
                             const allCategories = categoriesResponse.data
                             
                             const productsWithNames = order.items?.map(item => {
-                              // Handle case where item.product might be an object or string
                               let productName = 'Unknown Product'
                               let categoryName = 'N/A'
                               
                               if (typeof item.product === 'object' && item.product?.name) {
-                                // item.product is already a product object
                                 productName = item.product.name
                                 if (item.product.category?.name) {
                                   categoryName = item.product.category.name
                                 } else if (item.product.category) {
-                                  // category might be just an ID, look it up
                                   const category = allCategories.find(c => c._id === item.product.category)
                                   categoryName = category?.name || 'N/A'
                                 }
                               } else if (typeof item.product === 'string') {
-                                // item.product is an ID, find the product
                                 const product = allProducts.find(p => p._id === item.product)
                                 productName = product?.name || `Product ${item.product}`
                                 if (product?.category?.name) {
                                   categoryName = product.category.name
                                 } else if (product?.category) {
-                                  // category might be just an ID, look it up
                                   const category = allCategories.find(c => c._id === product.category)
                                   categoryName = category?.name || 'N/A'
                                 }
@@ -467,7 +580,7 @@ const Order = () => {
       </motion.div>
       
       {/* Pagination */}
-      <div className="flex justify-center items-center mt-6 gap-2">
+      <div className="flex flex-wrap justify-center items-center mt-6 gap-2">
         <button
           onClick={() => fetchOrders(currentPage - 1)}
           disabled={currentPage === 1}
@@ -501,8 +614,8 @@ const Order = () => {
 
       {/* Order Details Modal */}
       {showModal && selectedOrder && (
-        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-          <div className="bg-white rounded-lg p-6 max-w-4xl w-full mx-4 max-h-96 overflow-y-auto">
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg p-4 sm:p-6 max-w-4xl w-full max-h-[90vh] overflow-y-auto">
             <div className="flex justify-between items-center mb-4">
               <h3 className="text-xl font-bold text-gray-800">Order Details - {selectedOrder._id}</h3>
               <button 

@@ -77,15 +77,15 @@ const Category = () => {
 
   return (
     <motion.div 
-      className="max-w-6xl mx-auto"
+      className="max-w-6xl mx-auto px-4 sm:px-6"
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
     >
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
-          <h1 className="text-3xl font-bold text-gray-800 mb-2">Categories</h1>
-          <p className="text-gray-600 text-lg">Manage your product categories</p>
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-800 mb-2">Categories</h1>
+          <p className="text-gray-600 text-base sm:text-lg">Manage your product categories</p>
         </div>
       </div>
       
@@ -101,7 +101,7 @@ const Category = () => {
       )}
       
       <motion.div 
-        className="mb-8 p-8 bg-white border border-gray-200 rounded-2xl shadow-sm"
+        className="mb-8 p-4 sm:p-8 bg-white border border-gray-200 rounded-2xl shadow-sm"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.2 }}
@@ -110,7 +110,7 @@ const Category = () => {
           boxShadow: "0 10px 30px rgba(0,0,0,0.08)"
         }}
       >
-        <h3 className="text-xl font-semibold text-gray-800 mb-6">
+        <h3 className="text-lg sm:text-xl font-semibold text-gray-800 mb-6">
           {editId ? 'Edit Category' : 'Add New Category'}
         </h3>
         
@@ -141,7 +141,7 @@ const Category = () => {
             />
           </div>
 
-          <div className="flex gap-4">
+          <div className="flex flex-col sm:flex-row gap-4">
             <motion.button 
               type="submit" 
               disabled={loading}
@@ -177,7 +177,7 @@ const Category = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.4 }}
       >
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 p-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 p-4 sm:p-6">
           {categories.map((category, index) => (
             <motion.div
               key={category._id}
@@ -197,7 +197,7 @@ const Category = () => {
                 </p>
               </div>
               
-              <div className="flex gap-3">
+              <div className="flex flex-col sm:flex-row gap-3">
                 <motion.button 
                   onClick={() => handleEdit(category)} 
                   className="flex-1 px-4 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"

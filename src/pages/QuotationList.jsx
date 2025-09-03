@@ -81,15 +81,15 @@ const QuotationList = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6">
       <div className="mb-8">
-        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-8 border border-gray-200">
-          <div className="flex justify-between items-center">
+        <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
+          <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-3xl font-bold mb-2 text-gray-800">Quotation List</h1>
-              <p className="text-gray-600 text-lg">View and manage customer quotations</p>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-800">Quotation List</h1>
+              <p className="text-gray-600 text-base sm:text-lg">View and manage customer quotations</p>
             </div>
-            <div className="flex gap-3">
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
               <motion.button 
                 onClick={exportToCSV}
                 className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
@@ -117,8 +117,132 @@ const QuotationList = () => {
         </div>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="md:hidden space-y-4">
+        {quotations.map((quotation, index) => (
+          <motion.div
+            key={quotation._id}
+            className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: index * 0.05 }}
+          >
+            <div className="flex justify-between items-start mb-3">
+              <div className="flex-1">
+                <h3 className="font-medium text-gray-900">#QT-{quotation._id?.slice(-6) || 'N/A'}</h3>
+                <p className="text-sm text-gray-600">{quotation.customerName}</p>
+                <p className="text-xs text-gray-500">{quotation.customerEmail}</p>
+              </div>
+              <span className="text-lg font-bold text-gray-900">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+            </div>
+            
+            <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
+              <div>
+                <span className="text-gray-500">Items:</span>
+                <p className="font-medium">{quotation.items?.length || 0} items</p>
+              </div>
+              <div>
+                <span className="text-gray-500">Date:</span>
+                <p className="font-medium">{new Date(quotation.createdAt).toLocaleDateString()}</p>
+              </div>
+              <div className="col-span-2">
+                <span className="text-gray-500">Status:</span>
+                <span className={`inline-block ml-2 px-2 py-1 rounded-full text-xs font-medium ${
+                  quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                  quotation.status === 'Pending' ? 'bg-amber-50 text-amber-600' :
+                  quotation.status === 'Cancelled' ? 'bg-rose-50 text-rose-600' :
+                  'bg-gray-50 text-gray-600'
+                }`}>
+                  {quotation.status}
+                </span>
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-3 gap-2">
+              <button 
+                onClick={async () => {
+                  try {
+                    const [productsResponse, categoriesResponse] = await Promise.all([
+                      axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
+                      axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+                    ])
+                    const allProducts = productsResponse.data
+                    const allCategories = categoriesResponse.data
+                    
+                    const productsWithNames = quotation.items?.map(item => {
+                      let productName = 'Unknown Product'
+                      let categoryName = 'N/A'
+                      
+                      if (typeof item.product === 'object' && item.product?.name) {
+                        productName = item.product.name
+                        if (item.product.category?.name) {
+                          categoryName = item.product.category.name
+                        } else if (item.product.category) {
+                          const category = allCategories.find(c => c._id === item.product.category)
+                          categoryName = category?.name || 'N/A'
+                        }
+                      } else if (typeof item.product === 'string') {
+                        const product = allProducts.find(p => p._id === item.product)
+                        productName = product?.name || `Product ${item.product}`
+                        if (product?.category?.name) {
+                          categoryName = product.category.name
+                        } else if (product?.category) {
+                          const category = allCategories.find(c => c._id === product.category)
+                          categoryName = category?.name || 'N/A'
+                        }
+                      }
+                      
+                      return {
+                        name: productName,
+                        orderQuantity: item.quantity,
+                        sellingRate: item.price,
+                        category: { name: categoryName }
+                      }
+                    }) || []
+                    
+                    navigate('/quotation', {
+                      state: {
+                        orderData: {
+                          customer: {
+                            name: quotation.customerName,
+                            email: quotation.customerEmail,
+                            phone: quotation.customerPhone,
+                            address: quotation.address || 'Address not provided'
+                          },
+                          products: productsWithNames,
+                          totalAmount: quotation.totalAmount || 0
+                        }
+                      }
+                    })
+                  } catch (error) {
+                    console.error('Error fetching products:', error)
+                    alert('Failed to load product details. Please try again.')
+                  }
+                }}
+                className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+              >
+                View
+              </button>
+              <button 
+                onClick={() => handleConvertToOrder(quotation._id)}
+                className="px-3 py-2 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100"
+              >
+                Convert
+              </button>
+              <button 
+                onClick={() => handleDeleteQuotation(quotation._id)}
+                className="px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
+              >
+                Delete
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </div>
+
+      {/* Desktop Table View */}
       <motion.div 
-        className="bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
+        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ delay: 0.3 }}
@@ -144,7 +268,6 @@ const QuotationList = () => {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ delay: index * 0.05 }}
-                  whileHover={{ backgroundColor: "#f9fafb" }}
                 >
                   <td className="px-6 py-4">
                     <div className="text-sm font-medium text-gray-800">#QT-{quotation._id?.slice(-6) || 'N/A'}</div>
@@ -189,29 +312,23 @@ const QuotationList = () => {
                             const allCategories = categoriesResponse.data
                             
                             const productsWithNames = quotation.items?.map(item => {
-                              
-                              // Handle case where item.product might be an object or string
                               let productName = 'Unknown Product'
                               let categoryName = 'N/A'
                               
                               if (typeof item.product === 'object' && item.product?.name) {
-                                // item.product is already a product object
                                 productName = item.product.name
                                 if (item.product.category?.name) {
                                   categoryName = item.product.category.name
                                 } else if (item.product.category) {
-                                  // category might be just an ID, look it up
                                   const category = allCategories.find(c => c._id === item.product.category)
                                   categoryName = category?.name || 'N/A'
                                 }
                               } else if (typeof item.product === 'string') {
-                                // item.product is an ID, find the product
                                 const product = allProducts.find(p => p._id === item.product)
                                 productName = product?.name || `Product ${item.product}`
                                 if (product?.category?.name) {
                                   categoryName = product.category.name
                                 } else if (product?.category) {
-                                  // category might be just an ID, look it up
                                   const category = allCategories.find(c => c._id === product.category)
                                   categoryName = category?.name || 'N/A'
                                 }

@@ -59,91 +59,9 @@ const Order = () => {
 
   const exportToCSV = async () => {
     try {
-      const [productsResponse, categoriesResponse] = await Promise.all([
-        axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-        axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-      ])
-      const allProducts = productsResponse.data
-      const allCategories = categoriesResponse.data
+      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/export/csv')
       
-      const csvData = []
-      
-      orders.forEach(order => {
-        if (order.items && order.items.length > 0) {
-          order.items.forEach(item => {
-            let productName = 'Unknown Product'
-            let categoryName = 'N/A'
-            
-            if (typeof item.product === 'object' && item.product?.name) {
-              productName = item.product.name
-              if (item.product.category?.name) {
-                categoryName = item.product.category.name
-              } else if (item.product.category) {
-                const category = allCategories.find(c => c._id === item.product.category || c._id === item.product.category._id)
-                categoryName = category?.name || 'N/A'
-              }
-            } else if (typeof item.product === 'string') {
-              const product = allProducts.find(p => p._id === item.product)
-              productName = product?.name || `Product ${item.product}`
-              if (product?.category?.name) {
-                categoryName = product.category.name
-              } else if (product?.category) {
-                const category = allCategories.find(c => c._id === product.category || c._id === product.category._id)
-                categoryName = category?.name || 'N/A'
-              }
-            }
-            
-            csvData.push({
-              'Order ID': `OR-${order._id?.slice(-6)}`,
-              'Order Date': new Date(order.createdAt).toLocaleDateString(),
-              'Customer Name': order.customerName || '',
-              'Customer Email': order.customerEmail || '',
-              'Customer Phone': order.customerPhone || '',
-              'Customer Address': order.address || '',
-              'Product Name': productName,
-              'Product Category': categoryName,
-              'Quantity': item.quantity || 0,
-              'Unit Price': item.price || 0,
-              'Line Total': (item.quantity * item.price) || 0,
-              'Order Total': order.totalAmount || 0
-            })
-          })
-        } else {
-          csvData.push({
-            'Order ID': `OR-${order._id?.slice(-6)}`,
-            'Order Date': new Date(order.createdAt).toLocaleDateString(),
-            'Customer Name': order.customerName || '',
-            'Customer Email': order.customerEmail || '',
-            'Customer Phone': order.customerPhone || '',
-            'Customer Address': order.address || '',
-            'Product Name': 'No items',
-            'Product Category': 'N/A',
-            'Quantity': 0,
-            'Unit Price': 0,
-            'Line Total': 0,
-            'Order Total': order.totalAmount || 0
-          })
-        }
-      })
-      
-      const csvHeaders = ['Order ID', 'Order Date', 'Customer Name', 'Customer Email', 'Customer Phone', 'Customer Address', 'Product Name', 'Product Category', 'Quantity', 'Unit Price', 'Line Total', 'Order Total']
-      
-      const escapeCsvValue = (value) => {
-        const stringValue = String(value || '')
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`
-        }
-        return stringValue
-      }
-      
-      const csvContent = [
-        csvHeaders.join(','),
-        ...csvData.map(row => csvHeaders.map(header => escapeCsvValue(row[header])).join(','))
-      ].join('\r\n')
-      
-      // Add BOM for proper Excel UTF-8 support
-      const BOM = '\uFEFF'
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

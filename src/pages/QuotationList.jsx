@@ -57,92 +57,9 @@ const QuotationList = () => {
 
   const exportToCSV = async () => {
     try {
-      const [productsResponse, categoriesResponse] = await Promise.all([
-        axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-        axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-      ])
-      const allProducts = productsResponse.data
-      const allCategories = categoriesResponse.data
+      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/quotations/export/csv')
       
-      const csvData = []
-      
-      quotations.forEach(quotation => {
-        if (quotation.items && quotation.items.length > 0) {
-          quotation.items.forEach(item => {
-            let productName = 'Unknown Product'
-            let categoryName = 'N/A'
-            
-            if (typeof item.product === 'object' && item.product?.name) {
-              productName = item.product.name
-              if (item.product.category?.name) {
-                categoryName = item.product.category.name
-              } else if (item.product.category) {
-                const category = allCategories.find(c => c._id === item.product.category || c._id === item.product.category._id)
-                categoryName = category?.name || 'N/A'
-              }
-            } else if (typeof item.product === 'string') {
-              const product = allProducts.find(p => p._id === item.product)
-              productName = product?.name || `Product ${item.product}`
-              if (product?.category?.name) {
-                categoryName = product.category.name
-              } else if (product?.category) {
-                const category = allCategories.find(c => c._id === product.category || c._id === product.category._id)
-                categoryName = category?.name || 'N/A'
-              }
-            }
-            
-            csvData.push({
-              'Quotation ID': `QT-${quotation._id?.slice(-6)}`,
-              'Quotation Date': new Date(quotation.createdAt).toLocaleDateString(),
-              'Customer Name': quotation.customerName || '',
-              'Customer Email': quotation.customerEmail || '',
-              'Customer Phone': quotation.customerPhone || '',
-              'Customer Address': quotation.address || '',
-              'Product Name': productName,
-              'Product Category': categoryName,
-              'Quantity': item.quantity || 0,
-              'Unit Price': item.price || 0,
-              'Line Total': (item.quantity * item.price) || 0,
-              'Quotation Total': quotation.totalAmount || 0,
-              'Status': quotation.status || 'Pending'
-            })
-          })
-        } else {
-          csvData.push({
-            'Quotation ID': `QT-${quotation._id?.slice(-6)}`,
-            'Quotation Date': new Date(quotation.createdAt).toLocaleDateString(),
-            'Customer Name': quotation.customerName || '',
-            'Customer Email': quotation.customerEmail || '',
-            'Customer Phone': quotation.customerPhone || '',
-            'Customer Address': quotation.address || '',
-            'Product Name': 'No items',
-            'Product Category': 'N/A',
-            'Quantity': 0,
-            'Unit Price': 0,
-            'Line Total': 0,
-            'Quotation Total': quotation.totalAmount || 0,
-            'Status': quotation.status || 'Pending'
-          })
-        }
-      })
-      
-      const csvHeaders = ['Quotation ID', 'Quotation Date', 'Customer Name', 'Customer Email', 'Customer Phone', 'Customer Address', 'Product Name', 'Product Category', 'Quantity', 'Unit Price', 'Line Total', 'Quotation Total', 'Status']
-      
-      const escapeCsvValue = (value) => {
-        const stringValue = String(value || '')
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`
-        }
-        return stringValue
-      }
-      
-      const csvContent = [
-        csvHeaders.join(','),
-        ...csvData.map(row => csvHeaders.map(header => escapeCsvValue(row[header])).join(','))
-      ].join('\r\n')
-      
-      const BOM = '\uFEFF'
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

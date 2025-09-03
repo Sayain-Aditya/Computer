@@ -55,38 +55,11 @@ const Product = () => {
     }
   }
 
-  const exportToCSV = () => {
+  const exportToCSV = async () => {
     try {
-      const csvData = products.map(product => ({
-        'Product Name': product.name || '',
-        'Model Number': product.modelNumber || '',
-        'Brand': product.brand || '',
-        'Category': product.category?.name || 'Uncategorized',
-        'Purchase Rate': product.purchaseRate || 0,
-        'Selling Rate': product.sellingRate || 0,
-        'Quantity': product.quantity || 0,
-        'Status': product.status || 'Active',
-        'Description': (product.description || '').replace(/\n/g, ' ').replace(/\r/g, ' '),
-        'Created Date': product.createdAt ? new Date(product.createdAt).toISOString().split('T')[0] : 'N/A'
-      }))
+      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/export/csv')
       
-      const csvHeaders = ['Product Name', 'Model Number', 'Brand', 'Category', 'Purchase Rate', 'Selling Rate', 'Quantity', 'Status', 'Description', 'Created Date']
-      
-      const escapeCsvValue = (value) => {
-        const stringValue = String(value || '')
-        if (stringValue.includes(',') || stringValue.includes('"') || stringValue.includes('\n')) {
-          return `"${stringValue.replace(/"/g, '""')}"`
-        }
-        return stringValue
-      }
-      
-      const csvContent = [
-        csvHeaders.join(','),
-        ...csvData.map(row => csvHeaders.map(header => escapeCsvValue(row[header])).join(','))
-      ].join('\r\n')
-      
-      const BOM = '\uFEFF'
-      const blob = new Blob([BOM + csvContent], { type: 'text/csv;charset=utf-8;' })
+      const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
       link.href = url

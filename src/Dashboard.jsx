@@ -38,6 +38,43 @@ const Dashboard = () => {
     fetchDashboardData().finally(() => setLoading(false));
   }, []);
 
+  useEffect(() => {
+    if (selectedOrderCategory) {
+      fetchCategoryData('orders', selectedOrderCategory);
+    } else {
+      fetchDashboardData();
+    }
+  }, [selectedOrderCategory]);
+
+  useEffect(() => {
+    if (selectedSalesCategory) {
+      fetchCategoryData('sales', selectedSalesCategory);
+    } else {
+      fetchDashboardData();
+    }
+  }, [selectedSalesCategory]);
+
+  const fetchCategoryData = async (type, categoryId) => {
+    try {
+      const endpoint = type === 'orders' 
+        ? `https://computer-shop-ecru.vercel.app/api/dashboard/orders/yearly?category=${categoryId}`
+        : `https://computer-shop-ecru.vercel.app/api/dashboard/sales/yearly?category=${categoryId}`;
+      
+      console.log(`Fetching ${type} data for category:`, categoryId, 'from:', endpoint);
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      console.log(`Received ${type} data:`, data);
+      
+      if (type === 'orders') {
+        setStats(prev => ({ ...prev, yearlyOrders: data }));
+      } else {
+        setStats(prev => ({ ...prev, yearlySales: data }));
+      }
+    } catch (error) {
+      console.error(`Error fetching category ${type} data:`, error);
+    }
+  };
+
   const fetchDashboardData = async () => {
     try {
       const [categoriesRes, ordersRes, productsRes] = await Promise.all([
@@ -95,30 +132,20 @@ const Dashboard = () => {
 
   // Filter data based on selected category
   const getFilteredOrderData = () => {
-    if (!selectedOrderCategory) {
-      return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-    }
-    const categoryData = stats.categoryProducts.find(([category, count]) => 
-      categories.find(cat => cat._id === selectedOrderCategory)?.name === category
-    );
-    return categoryData ? categoryData[1] : 0;
+    return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
   const getFilteredSalesData = () => {
-    if (!selectedSalesCategory) {
-      return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-    }
-    const categoryData = stats.categoryProducts.find(([category, count]) => 
-      categories.find(cat => cat._id === selectedSalesCategory)?.name === category
-    );
-    return categoryData ? categoryData[1] * 1000 : 0;
+    return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
+  const fiveYears = Array.from({length: 5}, (_, i) => (currentYear - 4 + i).toString());
+  
   const ordersChartData = {
-    labels: [selectedOrderCategory ? categories.find(cat => cat._id === selectedOrderCategory)?.name || currentYear.toString() : currentYear.toString()],
+    labels: fiveYears,
     datasets: [{
       label: 'Yearly Orders',
-      data: [getFilteredOrderData()],
+      data: [0, 0, 0, 0, getFilteredOrderData()],
       backgroundColor: 'rgba(59, 130, 246, 0.8)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 2,
@@ -128,10 +155,10 @@ const Dashboard = () => {
   };
 
   const salesChartData = {
-    labels: [selectedSalesCategory ? categories.find(cat => cat._id === selectedSalesCategory)?.name || currentYear.toString() : currentYear.toString()],
+    labels: fiveYears,
     datasets: [{
       label: 'Yearly Sales (₹)',
-      data: [getFilteredSalesData()],
+      data: [0, 0, 0, 0, getFilteredSalesData()],
       backgroundColor: 'rgba(34, 197, 94, 0.8)',
       borderColor: 'rgba(34, 197, 94, 1)',
       borderWidth: 2,

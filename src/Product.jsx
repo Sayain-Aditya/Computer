@@ -47,11 +47,15 @@ const Product = () => {
   }
 
   const handleDelete = async (id) => {
+    if (!confirm('Are you sure you want to delete this product?')) return
+    
     try {
       await axios.delete(`https://computer-shop-ecru.vercel.app/api/products/delete/${id}`)
       fetchProducts()
+      toast.success('Product deleted successfully!')
     } catch (error) {
       console.error('Error deleting product:', error)
+      toast.error('Failed to delete product. Please try again.')
     }
   }
 

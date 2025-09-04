@@ -28,13 +28,17 @@ const EditOrder = () => {
   }, [id])
 
   useEffect(() => {
-    // Check if there are any motherboards in selected products
+    // Check if there are any motherboards or CPUs in selected products
     const hasMotherboard = selectedProducts.some(item => 
       item.category?.name?.toLowerCase().includes('motherboard')
     )
+    const hasCPU = selectedProducts.some(item => 
+      item.category?.name?.toLowerCase().includes('cpu') || 
+      item.category?.name?.toLowerCase().includes('processor')
+    )
     
-    // Hide compatible products if no motherboard is selected
-    if (!hasMotherboard) {
+    // Hide compatible products if no motherboard or CPU is selected
+    if (!hasMotherboard && !hasCPU) {
       setShowCompatible(false)
       setCompatibleProducts([])
     }
@@ -138,6 +142,26 @@ const EditOrder = () => {
     }
   }
 
+  const getCompatibleMotherboards = (cpuProduct) => {
+    const cpuAttrs = cpuProduct.attributes || {}
+    
+    // Only proceed if CPU has all three required attributes
+    if (!cpuAttrs.socketType || !cpuAttrs.ChipsetSupport || !cpuAttrs.RamType) {
+      return []
+    }
+    
+    return products.filter(product => {
+      if (!product.category?.name?.toLowerCase().includes('motherboard')) return false
+      
+      const mbAttrs = product.attributes || {}
+      
+      // Require ALL three attributes to match exactly
+      return mbAttrs.socketType === cpuAttrs.socketType &&
+             mbAttrs.ChipsetSupport === cpuAttrs.ChipsetSupport &&
+             mbAttrs.RamType === cpuAttrs.RamType
+    })
+  }
+
   const addToOrder = (product, quantity = 1) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
     if (existingItem) {
@@ -150,12 +174,26 @@ const EditOrder = () => {
       setSelectedProducts([...selectedProducts, { ...product, orderQuantity: quantity }])
     }
     
-    // Auto-show compatible products if motherboard or CPU is added
+    // Auto-show compatible products if motherboard is added
     const categoryName = product.category?.name?.toLowerCase() || ''
-    if (categoryName.includes('motherboard') || 
-        categoryName.includes('cpu') || 
-        categoryName.includes('processor')) {
+    if (categoryName.includes('motherboard')) {
       fetchCompatibleProducts(product._id)
+      setTimeout(() => {
+        const element = document.querySelector('.compatible-products-section')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 500)
+    }
+    
+    // Auto-show compatible motherboards if CPU is added
+    if (categoryName.includes('cpu') || categoryName.includes('processor')) {
+      const compatibleMBs = getCompatibleMotherboards(product)
+      setCompatibleProducts(compatibleMBs)
+      setShowCompatible(true)
+      if (compatibleMBs.length === 0) {
+        toast.info('No compatible motherboards found')
+      }
       setTimeout(() => {
         const element = document.querySelector('.compatible-products-section')
         if (element) {

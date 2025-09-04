@@ -69,6 +69,7 @@ const CreateOrder = () => {
     try {
       console.log('Fetching compatible products for product ID:', productId)
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
+<<<<<<< HEAD
       console.log('API Response:', response.data)
       let compatibleData = response.data.compatibleProducts || []
       
@@ -88,6 +89,15 @@ const CreateOrder = () => {
       
       console.log('Compatible products found:', compatibleData.length, compatibleData)
       setCompatibleProducts(compatibleData)
+=======
+      const compatibleData = response.data.compatibleProducts || []
+      const selectedMotherboard = response.data.product
+      
+      // Include the selected motherboard in the display
+      const productsToShow = selectedMotherboard ? [selectedMotherboard, ...compatibleData] : compatibleData
+      
+      setCompatibleProducts(productsToShow)
+>>>>>>> 2dc2f892f2ad53fd02e97b61567965bd09ab31fb
       setShowCompatible(true)
       if (compatibleData.length === 0) {
         toast.info('No compatible products found')
@@ -224,6 +234,7 @@ const CreateOrder = () => {
         </button>
       </div>
 
+<<<<<<< HEAD
       <div className="flex flex-1 min-h-0">
         {/* Fixed Sidebar */}
         <div className="w-80 bg-gray-50 border-r flex flex-col">
@@ -231,6 +242,14 @@ const CreateOrder = () => {
           <div className="p-4 bg-white border-b">
             <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
             <div className="space-y-3">
+=======
+      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
+        {/* Customer Info */}
+        <div className="xl:col-span-1 order-1 xl:order-1">
+          <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+            <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
+            <div className="space-y-4">
+>>>>>>> 2dc2f892f2ad53fd02e97b61567965bd09ab31fb
               <input
                 type="text"
                 placeholder="Customer Name"
@@ -296,7 +315,80 @@ const CreateOrder = () => {
                         </button>
                       </div>
                     </div>
+<<<<<<< HEAD
                   ))}
+=======
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
+                        className="w-6 h-6 bg-red-600 text-white rounded text-xs hover:bg-red-700"
+                      >
+                        -
+                      </button>
+                      <span className="text-sm font-medium w-8 text-center">{item.orderQuantity}</span>
+                      <button
+                        onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
+                        className="w-6 h-6 bg-green-600 text-white rounded text-xs hover:bg-green-700"
+                      >
+                        +
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <div className="border-t pt-3 mt-4">
+                  <div className="flex justify-between font-bold text-lg">
+                    <span>Total:</span>
+                    <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                  </div>
+                </div>
+                <div className="flex gap-2 mt-4">
+                  <motion.button
+                    onClick={handleSubmitOrder}
+                    className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700"
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
+                    Create Order
+                  </motion.button>
+                  <motion.button
+                    onClick={async () => {
+                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
+                        toast.error('Please fill customer details and add products to generate quote')
+                        return
+                      }
+
+                      const quotationData = {
+                        customerName: customerInfo.name,
+                        customerEmail: customerInfo.email,
+                        customerPhone: customerInfo.phone,
+                        address: customerInfo.address,
+                        type: 'Quotation',
+                        items: selectedProducts.map(item => ({
+                          product: item._id,
+                          quantity: item.orderQuantity,
+                          price: item.sellingRate
+                        })),
+                        totalAmount: getTotalAmount(),
+                        status: 'Pending'
+                      }
+
+                      try {
+                        await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                        toast.success('Quotation generated and saved successfully!')
+                        navigate('/quotation-list')
+                      } catch (error) {
+                        console.error('Error generating quotation:', error)
+                        toast.error('Failed to generate quotation. Please try again.')
+                      }
+                    }}
+                    disabled={selectedProducts.length === 0}
+                    className="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                    whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                    whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                  >
+                    Generate Quote
+                  </motion.button>
+>>>>>>> 2dc2f892f2ad53fd02e97b61567965bd09ab31fb
                 </div>
               )}
             </div>
@@ -369,6 +461,7 @@ const CreateOrder = () => {
           </div>
         </div>
 
+<<<<<<< HEAD
         {/* Scrollable Products Section */}
         <div className="flex-1 overflow-y-auto p-4">
           <div className="bg-white rounded-lg shadow-sm border">
@@ -398,6 +491,33 @@ const CreateOrder = () => {
                   )}
                 </div>
               </div>
+=======
+        {/* Products Table */}
+        <div className="xl:col-span-2 order-2 xl:order-2">
+          <div className="mb-4 flex justify-between items-center">
+            <h3 className="text-lg font-medium text-gray-800">Available Products</h3>
+            <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+              >
+                <option value="">All Categories</option>
+                {categories.map(category => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {showCompatible && (
+                <button
+                  onClick={() => setShowCompatible(false)}
+                  className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                >
+                  Show All Products
+                </button>
+              )}
+>>>>>>> 2dc2f892f2ad53fd02e97b61567965bd09ab31fb
             </div>
             
             <div className="overflow-x-auto">

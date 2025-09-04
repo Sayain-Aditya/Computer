@@ -41,71 +41,25 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedOrderCategory) {
       fetchCategoryData('orders', selectedOrderCategory);
-    } else {
-      fetchDashboardData();
     }
   }, [selectedOrderCategory]);
 
   useEffect(() => {
     if (selectedSalesCategory) {
       fetchCategoryData('sales', selectedSalesCategory);
-    } else {
-      fetchDashboardData();
     }
   }, [selectedSalesCategory]);
 
   const fetchCategoryData = async (type, categoryId) => {
     try {
-      // Fetch orders and filter by category manually since API might not support category filtering
-      const ordersRes = await fetch('https://computer-shop-ecru.vercel.app/api/orders/get');
-      const ordersResponse = await ordersRes.json();
-      const orders = ordersResponse.orders || ordersResponse.data || [];
+      const endpoint = type === 'orders' 
+        ? `https://computer-shop-ecru.vercel.app/api/dashboard/orders/yearly?category=${categoryId}`
+        : `https://computer-shop-ecru.vercel.app/api/dashboard/sales/yearly?category=${categoryId}`;
       
-      // Fetch products to get category information
-      const productsRes = await fetch('https://computer-shop-ecru.vercel.app/api/products/all');
-      const products = await productsRes.json();
-      const productList = products.products || products;
-      
-      // Create a map of product ID to category ID
-      const productCategoryMap = {};
-      productList.forEach(product => {
-        if (product.category && product.category._id) {
-          productCategoryMap[product._id] = product.category._id;
-        }
-      });
-      
-      const currentYear = new Date().getFullYear();
-      const monthlyData = Array(12).fill(0);
-      
-      // Filter orders by category and calculate monthly data
-      orders.forEach(order => {
-        const orderDate = new Date(order.createdAt);
-        if (orderDate.getFullYear() === currentYear) {
-          const month = orderDate.getMonth();
-          
-          // Check if any item in the order belongs to the selected category
-          const hasItemInCategory = order.items?.some(item => {
-            const itemProductId = typeof item.product === 'object' ? item.product._id : item.product;
-            return productCategoryMap[itemProductId] === categoryId;
-          });
-          
-          if (hasItemInCategory) {
-            if (type === 'orders') {
-              monthlyData[month]++;
-            } else {
-              // For sales, sum only items from the selected category
-              const categoryTotal = order.items?.reduce((total, item) => {
-                const itemProductId = typeof item.product === 'object' ? item.product._id : item.product;
-                if (productCategoryMap[itemProductId] === categoryId) {
-                  return total + ((item.price || 0) * (item.quantity || 0));
-                }
-                return total;
-              }, 0) || 0;
-              monthlyData[month] += categoryTotal;
-            }
-          }
-        }
-      });
+      console.log(`Fetching ${type} data for category:`, categoryId, 'from:', endpoint);
+      const response = await fetch(endpoint);
+      const data = await response.json();
+      console.log(`Received ${type} data:`, data);
       
       if (type === 'orders') {
         setStats(prev => ({ ...prev, yearlyOrders: monthlyData }));
@@ -174,10 +128,18 @@ const Dashboard = () => {
 
   // Filter data based on selected category
   const getFilteredOrderData = () => {
+    if (!selectedOrderCategory) {
+      // Show all data when no category is selected
+      return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
+    }
     return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
   const getFilteredSalesData = () => {
+    if (!selectedSalesCategory) {
+      // Show all data when no category is selected
+      return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
+    }
     return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
@@ -326,21 +288,21 @@ const Dashboard = () => {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Categories</h3>
-          <p className="text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Categories</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
-          <p className="text-3xl font-bold text-green-600">{Array.isArray(stats.yearlyOrders) ? stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600">{Array.isArray(stats.yearlyOrders) ? stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
-          <p className="text-3xl font-bold text-purple-600">₹{Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0).toLocaleString() : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
+          <p className="text-xl sm:text-3xl font-bold text-purple-600">₹{Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0).toLocaleString() : 0}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Products</h3>
-          <p className="text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
         </div>
       </div>
 
@@ -354,7 +316,12 @@ const Dashboard = () => {
           <div className="mb-4">
             <select
               value={selectedOrderCategory}
-              onChange={(e) => setSelectedOrderCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedOrderCategory(e.target.value);
+                if (!e.target.value) {
+                  fetchDashboardData();
+                }
+              }}
               className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>
@@ -378,7 +345,12 @@ const Dashboard = () => {
           <div className="mb-4">
             <select
               value={selectedSalesCategory}
-              onChange={(e) => setSelectedSalesCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedSalesCategory(e.target.value);
+                if (!e.target.value) {
+                  fetchDashboardData();
+                }
+              }}
               className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>

@@ -21,7 +21,7 @@ function App() {
     <Router>
       <div className="flex bg-gray-50 min-h-screen">
         <Sidebar isOpen={sidebarOpen} setIsOpen={setSidebarOpen} />
-        <div className={`${sidebarOpen ? '' : 'lg:ml-16'} lg:ml-64 w-full transition-all duration-300`}>
+        <div className={`${sidebarOpen ? 'lg:ml-64' : 'lg:ml-16'} w-full transition-all duration-300`}>
           {/* Mobile hamburger menu button */}
           <div className="lg:hidden flex items-center justify-between p-4 bg-white shadow-sm">
             <button

@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react'
 import { motion } from 'framer-motion'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const Category = () => {
@@ -42,8 +43,10 @@ const Category = () => {
     try {
       if (editId) {
         await axios.put(`https://computer-shop-ecru.vercel.app/api/categories/update/${editId}`, formData)
+        toast.success('Category updated successfully!')
       } else {
         await axios.post('https://computer-shop-ecru.vercel.app/api/categories/create', formData)
+        toast.success('Category created successfully!')
       }
       fetchCategories()
       setFormData({ name: '', description: '' })
@@ -60,6 +63,8 @@ const Category = () => {
     setFormData({ name: category.name, description: category.description })
     setEditId(category._id)
     setError('')
+    // Scroll to top to show the form
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {
@@ -68,6 +73,7 @@ const Category = () => {
     try {
       setError('')
       await axios.delete(`https://computer-shop-ecru.vercel.app/api/categories/delete/${id}`)
+      toast.success('Category deleted successfully!')
       fetchCategories()
     } catch (error) {
       setError('Failed to delete category')

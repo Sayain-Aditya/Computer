@@ -26,6 +26,23 @@ const CreateOrder = () => {
     fetchCategories()
   }, [])
 
+  useEffect(() => {
+    // Check if there are any motherboards or CPUs in selected products
+    const hasMotherboard = selectedProducts.some(item => 
+      item.category?.name?.toLowerCase().includes('motherboard')
+    )
+    const hasCPU = selectedProducts.some(item => 
+      item.category?.name?.toLowerCase().includes('cpu') || 
+      item.category?.name?.toLowerCase().includes('processor')
+    )
+    
+    // Hide compatible products if no motherboard or CPU is selected
+    if (!hasMotherboard && !hasCPU) {
+      setShowCompatible(false)
+      setCompatibleProducts([])
+    }
+  }, [selectedProducts])
+
   const fetchProducts = async () => {
     try {
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
@@ -45,21 +62,14 @@ const CreateOrder = () => {
   }
 
   const getFilteredProducts = () => {
-    if (showCompatible) return compatibleProducts
-    if (!selectedCategory) return products
-    return products.filter(product => product.category?._id === selectedCategory)
+    return products
   }
 
   const fetchCompatibleProducts = async (productId) => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
       const compatibleData = response.data.compatibleProducts || []
-      const selectedMotherboard = response.data.product
-      
-      // Include the selected motherboard in the display
-      const productsToShow = selectedMotherboard ? [selectedMotherboard, ...compatibleData] : compatibleData
-      
-      setCompatibleProducts(productsToShow)
+      setCompatibleProducts(compatibleData)
       setShowCompatible(true)
       if (compatibleData.length === 0) {
         toast.info('No compatible products found')
@@ -70,6 +80,26 @@ const CreateOrder = () => {
       setShowCompatible(true)
       toast.error('Failed to fetch compatible products')
     }
+  }
+
+  const getCompatibleMotherboards = (cpuProduct) => {
+    const cpuAttrs = cpuProduct.attributes || {}
+    
+    // Only proceed if CPU has all three required attributes
+    if (!cpuAttrs.socketType || !cpuAttrs.ChipsetSupport || !cpuAttrs.RamType) {
+      return []
+    }
+    
+    return products.filter(product => {
+      if (!product.category?.name?.toLowerCase().includes('motherboard')) return false
+      
+      const mbAttrs = product.attributes || {}
+      
+      // Require ALL three attributes to match exactly
+      return mbAttrs.socketType === cpuAttrs.socketType &&
+             mbAttrs.ChipsetSupport === cpuAttrs.ChipsetSupport &&
+             mbAttrs.RamType === cpuAttrs.RamType
+    })
   }
 
 
@@ -84,6 +114,33 @@ const CreateOrder = () => {
       ))
     } else {
       setSelectedProducts([...selectedProducts, { ...product, orderQuantity: quantity }])
+    }
+    
+    // Auto-show compatible products if motherboard is added
+    if (product.category?.name?.toLowerCase().includes('motherboard')) {
+      fetchCompatibleProducts(product._id)
+      setTimeout(() => {
+        const element = document.querySelector('.compatible-products-section')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 500)
+    }
+    
+    // Auto-show compatible motherboards if CPU is added
+    if (product.category?.name?.toLowerCase().includes('cpu') || product.category?.name?.toLowerCase().includes('processor')) {
+      const compatibleMBs = getCompatibleMotherboards(product)
+      setCompatibleProducts(compatibleMBs)
+      setShowCompatible(true)
+      if (compatibleMBs.length === 0) {
+        toast.info('No compatible motherboards found')
+      }
+      setTimeout(() => {
+        const element = document.querySelector('.compatible-products-section')
+        if (element) {
+          element.scrollIntoView({ behavior: 'smooth' })
+        }
+      }, 500)
     }
   }
 
@@ -108,6 +165,17 @@ const CreateOrder = () => {
   const handleSubmitOrder = async () => {
     if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
       toast.error('Please fill customer details and add products to order')
+      return
+    }
+    
+    if (customerInfo.phone && customerInfo.phone.length !== 10) {
+      toast.error('Phone number must be exactly 10 digits')
+      return
+    }
+    
+    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+    if (!emailRegex.test(customerInfo.email)) {
+      toast.error('Please enter a valid email address')
       return
     }
 
@@ -158,8 +226,8 @@ const CreateOrder = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto p-2 sm:p-4">
-      <div className="mb-4 sm:mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
+    <div className="h-screen flex flex-col overflow-hidden p-2">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
           <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Create Order</h1>
           <p className="text-gray-600 text-sm mt-1">Take customer orders for computer parts</p>
@@ -172,51 +240,59 @@ const CreateOrder = () => {
         </button>
       </div>
 
-      <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
-        {/* Customer Info */}
-        <div className="xl:col-span-1 order-2 xl:order-1">
-          <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
-            <div className="space-y-4">
-              <input
-                type="text"
-                placeholder="Customer Name"
-                value={customerInfo.name}
-                onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="email"
-                placeholder="Email"
-                value={customerInfo.email}
-                onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="tel"
-                placeholder="Phone"
-                value={customerInfo.phone}
-                onChange={(e) => setCustomerInfo({...customerInfo, phone: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              <textarea
-                placeholder="Address"
-                value={customerInfo.address}
-                onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 h-20 resize-none"
-              />
-            </div>
+      <div className="flex flex-col xl:flex-row gap-4 flex-1 min-h-0">
+        {/* Customer Info - Fixed */}
+        <div className="xl:w-1/3 order-2 xl:order-1 flex flex-col">
+          <div className="p-3 bg-white border border-gray-200 rounded-lg shadow-sm mb-4 flex-shrink-0">
+          <h3 className="text-base font-medium text-gray-800 mb-2">Customer Information</h3>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder="Customer Name"
+              value={customerInfo.name}
+              onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+            />
+            <input
+              type="email"
+              placeholder="Email (e.g., user@example.com)"
+              value={customerInfo.email}
+              onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+            />
+            <input
+              type="tel"
+              placeholder="Phone (10 digits)"
+              value={customerInfo.phone}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                setCustomerInfo({...customerInfo, phone: value})
+              }}
+              maxLength={10}
+              pattern="[0-9]{10}"
+              className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+            />
+            <textarea
+              placeholder="Address"
+              value={customerInfo.address}
+              onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
+              className="w-full px-2 py-1.5 border border-gray-300 rounded focus:outline-none focus:border-blue-500 h-12 resize-none text-sm"
+            />
           </div>
+        </div>
 
-          {/* Order Summary */}
-          <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm">
-            <h3 className="text-lg font-medium text-gray-800 mb-4">Order Summary</h3>
+        {/* Order Summary */}
+        <div className="bg-white border border-gray-200 rounded-lg shadow-sm h-96 relative">
+          <h3 className="text-lg font-medium text-gray-800 p-4 pb-3">Order Summary</h3>
+          
+          {/* Scrollable Items Area */}
+          <div className="px-4 overflow-y-auto" style={{height: '220px', scrollbarWidth: 'none', msOverflowStyle: 'none', WebkitScrollbar: {display: 'none'}}}>
             {selectedProducts.length === 0 ? (
               <p className="text-gray-500 text-center py-4">No items in order</p>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-2 pb-2">
                 {selectedProducts.map(item => (
-                  <div key={item._id} className="flex justify-between items-center p-3 bg-gray-50 border border-gray-200 rounded">
+                  <div key={item._id} className="flex justify-between items-center p-2 bg-gray-50 border border-gray-200 rounded">
                     <div className="flex-1">
                       <p className="font-medium text-sm">{item.name}</p>
                       <p className="text-xs text-gray-500">₹{item.sellingRate} each</p>
@@ -238,68 +314,83 @@ const CreateOrder = () => {
                     </div>
                   </div>
                 ))}
-                <div className="border-t pt-3 mt-4">
-                  <div className="flex justify-between font-bold text-lg">
-                    <span>Total:</span>
-                    <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
-                  </div>
-                </div>
-                <div className="flex gap-2 mt-4">
-                  <motion.button
-                    onClick={handleSubmitOrder}
-                    className="flex-1 px-4 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700"
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                  >
-                    Create Order
-                  </motion.button>
-                  <motion.button
-                    onClick={async () => {
-                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                        alert('Please fill customer details and add products to generate quote')
-                        return
-                      }
-
-                      const quotationData = {
-                        customerName: customerInfo.name,
-                        customerEmail: customerInfo.email,
-                        customerPhone: customerInfo.phone,
-                        address: customerInfo.address,
-                        type: 'Quotation',
-                        items: selectedProducts.map(item => ({
-                          product: item._id,
-                          quantity: item.orderQuantity,
-                          price: item.sellingRate
-                        })),
-                        totalAmount: getTotalAmount(),
-                        status: 'Pending'
-                      }
-
-                      try {
-                        await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        alert('Quotation generated and saved successfully!')
-                        navigate('/quotation-list')
-                      } catch (error) {
-                        console.error('Error generating quotation:', error)
-                        alert('Failed to generate quotation. Please try again.')
-                      }
-                    }}
-                    disabled={selectedProducts.length === 0}
-                    className="flex-1 px-4 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                    whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
-                    whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
-                  >
-                    Generate Quote
-                  </motion.button>
-                </div>
               </div>
             )}
           </div>
+          
+          {/* Absolutely Positioned Total and Buttons */}
+          <div className="absolute bottom-0 left-0 right-0 bg-white px-4 pb-4 pt-3 border-t">
+            <div className="flex justify-between font-bold text-lg mb-3">
+              <span>Total:</span>
+              <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+            </div>
+            <div className="flex gap-2">
+                <motion.button
+                  onClick={handleSubmitOrder}
+                  disabled={selectedProducts.length === 0}
+                  className="flex-1 px-3 py-2 bg-blue-600 text-white font-medium rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                  whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                >
+                  Create Order
+                </motion.button>
+                <motion.button
+                  onClick={async () => {
+                    if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
+                      alert('Please fill customer details and add products to generate quote')
+                      return
+                    }
+                    
+                    if (customerInfo.phone && customerInfo.phone.length !== 10) {
+                      alert('Phone number must be exactly 10 digits')
+                      return
+                    }
+                    
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                    if (!emailRegex.test(customerInfo.email)) {
+                      alert('Please enter a valid email address')
+                      return
+                    }
+
+                    const quotationData = {
+                      customerName: customerInfo.name,
+                      customerEmail: customerInfo.email,
+                      customerPhone: customerInfo.phone,
+                      address: customerInfo.address,
+                      type: 'Quotation',
+                      items: selectedProducts.map(item => ({
+                        product: item._id,
+                        quantity: item.orderQuantity,
+                        price: item.sellingRate
+                      })),
+                      totalAmount: getTotalAmount(),
+                      status: 'Pending'
+                    }
+
+                    try {
+                      await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                      alert('Quotation generated and saved successfully!')
+                      navigate('/quotation-list')
+                    } catch (error) {
+                      console.error('Error generating quotation:', error)
+                      alert('Failed to generate quotation. Please try again.')
+                    }
+                  }}
+                  disabled={selectedProducts.length === 0}
+                  className="flex-1 px-3 py-2 bg-green-600 text-white font-medium rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+                  whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                  whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                >
+                  Generate Quote
+                </motion.button>
+              </div>
+            </div>
+        </div>
         </div>
 
-        {/* Products Table */}
-        <div className="xl:col-span-2 order-1 xl:order-2">
-          <div className="mb-4 flex justify-between items-center">
+        {/* Products Section - Single Scrollable Area */}
+        <div className="xl:w-2/3 order-1 xl:order-2 overflow-y-auto">
+          <div className="mb-3 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-800">Available Products</h3>
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
               <select
@@ -325,43 +416,55 @@ const CreateOrder = () => {
             </div>
           </div>
 
-          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden">
+          {/* Available Products Container */}
+          <div className="bg-white border border-gray-200 rounded-lg shadow-sm overflow-hidden mb-6">
             <div className="overflow-x-auto">
               <table className="w-full">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="hidden md:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="hidden lg:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="hidden sm:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                    <th className="hidden lg:table-cell px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                    <th className="px-2 sm:px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                    <th className="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                    <th className="hidden md:table-cell px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                    <th className="hidden lg:table-cell px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                    <th className="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                    <th className="hidden sm:table-cell px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                    <th className="hidden lg:table-cell px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                    <th className="px-2 sm:px-4 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                   </tr>
                 </thead>
                 <tbody className="bg-white divide-y divide-gray-200">
-                  {getFilteredProducts().map((product, index) => (
+                  {getFilteredProducts().map((product, index) => {
+                    const isSelected = selectedProducts.some(item => item._id === product._id)
+                    return (
                     <motion.tr 
                       key={product._id} 
-                      className="hover:bg-gray-50"
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
+                      className={`hover:bg-gray-50 ${isSelected ? 'bg-gray-50' : ''}`}
+                      initial={{ opacity: 0, x: -20, backgroundColor: isSelected ? "#f9fafb" : "transparent" }}
+                      animate={{ opacity: 1, x: 0, backgroundColor: isSelected ? "#dcfce7" : "transparent" }}
                       transition={{ delay: index * 0.05 }}
-                      whileHover={{ backgroundColor: "#f9fafb", scale: 1.01 }}
+                      whileHover={{ backgroundColor: isSelected ? "#bbf7d0" : "#f9fafb", scale: 1.01 }}
                     >
-                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-gray-900">
+                      <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-gray-900">
                         <button 
                           onClick={() => { setSelectedProduct(product); setShowModal(true) }}
-                          className="text-blue-600 hover:text-blue-800 hover:underline"
+                          className="text-blue-600 hover:text-blue-800 hover:underline text-left"
                         >
-                          {product.name}
+                          <div>{product.name}</div>
+                          {product.attributes && Object.keys(product.attributes).length > 0 && (
+                            <div className="flex flex-wrap gap-1 mt-1">
+                              {Object.entries(product.attributes).slice(0, 3).map(([key, value]) => (
+                                <span key={key} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                                  {key}: {value}
+                                </span>
+                              ))}
+                            </div>
+                          )}
                         </button>
                       </td>
-                      <td className="hidden md:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
-                      <td className="hidden lg:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.brand || 'N/A'}</td>
-                      <td className="px-2 sm:px-4 py-3 text-xs sm:text-sm font-medium text-green-600">₹{product.sellingRate}</td>
-                      <td className="hidden sm:table-cell px-2 sm:px-4 py-3 text-xs sm:text-sm text-gray-500">{product.quantity}</td>
-                      <td className="hidden lg:table-cell px-2 sm:px-4 py-3">
+                      <td className="hidden md:table-cell px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
+                      <td className="hidden lg:table-cell px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-500">{product.brand || 'N/A'}</td>
+                      <td className="px-2 sm:px-4 py-2 text-xs sm:text-sm font-medium text-green-600">₹{product.sellingRate}</td>
+                      <td className="hidden sm:table-cell px-2 sm:px-4 py-2 text-xs sm:text-sm text-gray-500">{product.quantity}</td>
+                      <td className="hidden lg:table-cell px-2 sm:px-4 py-2">
                         <span className={`px-2 py-1 rounded text-xs ${
                           product.status === 'Active' ? 'bg-green-100 text-green-800' :
                           product.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
@@ -370,7 +473,7 @@ const CreateOrder = () => {
                           {product.status}
                         </span>
                       </td>
-                      <td className="px-2 sm:px-4 py-3">
+                      <td className="px-2 sm:px-4 py-2">
                         <div className="flex flex-col sm:flex-row gap-1 sm:gap-2">
                           <motion.button
                             onClick={() => addToOrder(product)}
@@ -384,36 +487,60 @@ const CreateOrder = () => {
                           >
                             Add
                           </motion.button>
-                          {product.category?.name?.toLowerCase().includes('motherboard') && (
-                            <motion.button
-                              onClick={() => fetchCompatibleProducts(product._id)}
-                              className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
-                              whileHover={{ 
-                                scale: 1.1,
-                                backgroundColor: "#7c3aed"
-                              }}
-                              whileTap={{ scale: 0.9 }}
-                            >
-                              Compatible
-                            </motion.button>
-                          )}
+
                         </div>
                       </td>
                     </motion.tr>
-                  ))}
+                    )
+                  })}
                 </tbody>
               </table>
             </div>
 
             {getFilteredProducts().length === 0 && (
               <div className="text-center py-8">
-                <p className="text-gray-500">
-                  {showCompatible ? 'No compatible products found' : 
-                   selectedCategory ? 'No products in this category' : 'No products available'}
-                </p>
+                <p className="text-gray-500">No products available</p>
               </div>
             )}
           </div>
+
+          {/* Compatible Products Container - Grouped by Category */}
+          {showCompatible && compatibleProducts.length > 0 && (
+            <div className="compatible-products-section bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
+              <h3 className="text-lg font-medium text-gray-800 p-3 border-b border-gray-200">Compatible Products</h3>
+              <div className="p-3">
+                {Object.entries(
+                  compatibleProducts.reduce((acc, product) => {
+                    const categoryName = product.category?.name || 'Uncategorized'
+                    if (!acc[categoryName]) acc[categoryName] = []
+                    acc[categoryName].push(product)
+                    return acc
+                  }, {})
+                ).map(([categoryName, products]) => (
+                  <div key={categoryName} className="mb-4">
+                    <h4 className="font-semibold text-gray-700 text-sm mb-2 border-b pb-1">{categoryName}</h4>
+                    <div className="space-y-2">
+                      {products.map((product) => (
+                        <div key={product._id} className="flex justify-between items-center p-2 bg-gray-50 border border-gray-200 rounded hover:bg-gray-100">
+                          <div className="flex-1">
+                            <p className="font-medium text-sm">{product.name}</p>
+                            <p className="text-xs text-gray-500">{product.brand || 'N/A'} • ₹{product.sellingRate} • Stock: {product.quantity}</p>
+                          </div>
+                          <button
+                            onClick={() => addToOrder(product)}
+                            disabled={product.quantity === 0}
+                            className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                          >
+                            Add
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
       </div>
 

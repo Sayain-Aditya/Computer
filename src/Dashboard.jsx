@@ -56,19 +56,61 @@ const Dashboard = () => {
 
   const fetchCategoryData = async (type, categoryId) => {
     try {
-      const endpoint = type === 'orders' 
-        ? `https://computer-shop-ecru.vercel.app/api/dashboard/orders/yearly?category=${categoryId}`
-        : `https://computer-shop-ecru.vercel.app/api/dashboard/sales/yearly?category=${categoryId}`;
+      // Fetch orders and filter by category manually since API might not support category filtering
+      const ordersRes = await fetch('https://computer-shop-ecru.vercel.app/api/orders/get');
+      const ordersResponse = await ordersRes.json();
+      const orders = ordersResponse.orders || ordersResponse.data || [];
       
-      console.log(`Fetching ${type} data for category:`, categoryId, 'from:', endpoint);
-      const response = await fetch(endpoint);
-      const data = await response.json();
-      console.log(`Received ${type} data:`, data);
+      // Fetch products to get category information
+      const productsRes = await fetch('https://computer-shop-ecru.vercel.app/api/products/all');
+      const products = await productsRes.json();
+      const productList = products.products || products;
+      
+      // Create a map of product ID to category ID
+      const productCategoryMap = {};
+      productList.forEach(product => {
+        if (product.category && product.category._id) {
+          productCategoryMap[product._id] = product.category._id;
+        }
+      });
+      
+      const currentYear = new Date().getFullYear();
+      const monthlyData = Array(12).fill(0);
+      
+      // Filter orders by category and calculate monthly data
+      orders.forEach(order => {
+        const orderDate = new Date(order.createdAt);
+        if (orderDate.getFullYear() === currentYear) {
+          const month = orderDate.getMonth();
+          
+          // Check if any item in the order belongs to the selected category
+          const hasItemInCategory = order.items?.some(item => {
+            const itemProductId = typeof item.product === 'object' ? item.product._id : item.product;
+            return productCategoryMap[itemProductId] === categoryId;
+          });
+          
+          if (hasItemInCategory) {
+            if (type === 'orders') {
+              monthlyData[month]++;
+            } else {
+              // For sales, sum only items from the selected category
+              const categoryTotal = order.items?.reduce((total, item) => {
+                const itemProductId = typeof item.product === 'object' ? item.product._id : item.product;
+                if (productCategoryMap[itemProductId] === categoryId) {
+                  return total + ((item.price || 0) * (item.quantity || 0));
+                }
+                return total;
+              }, 0) || 0;
+              monthlyData[month] += categoryTotal;
+            }
+          }
+        }
+      });
       
       if (type === 'orders') {
-        setStats(prev => ({ ...prev, yearlyOrders: data }));
+        setStats(prev => ({ ...prev, yearlyOrders: monthlyData }));
       } else {
-        setStats(prev => ({ ...prev, yearlySales: data }));
+        setStats(prev => ({ ...prev, yearlySales: monthlyData }));
       }
     } catch (error) {
       console.error(`Error fetching category ${type} data:`, error);

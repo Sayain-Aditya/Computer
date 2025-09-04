@@ -268,7 +268,7 @@ const Order = () => {
         <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
             <div>
-              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-800">Orders</h1>
+              <h1 className="text-2xl sm:text-3xl font-bold mb-2 text-gray-800">Customer List</h1>
               <p className="text-gray-600 text-base sm:text-lg">View and manage customer orders</p>
             </div>
             <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">

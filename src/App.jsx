@@ -36,22 +36,19 @@ function App() {
             <div className="w-10"></div>
           </div>
           
-          <div className="p-2 sm:p-4 lg:p-6">
-          
           <Routes>
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
-            <Route path="/dashboard" element={<Dashboard />} />
-            <Route path="/categories" element={<Category />} />
-            <Route path="/products" element={<Product />} />
-            <Route path="/add-product" element={<AddProduct />} />
-            <Route path="/edit-product/:id" element={<EditProduct />} />
-            <Route path="/orders" element={<Order />} />
+            <Route path="/dashboard" element={<div className="p-2 sm:p-4 lg:p-6"><Dashboard /></div>} />
+            <Route path="/categories" element={<div className="p-2 sm:p-4 lg:p-6"><Category /></div>} />
+            <Route path="/products" element={<div className="p-2 sm:p-4 lg:p-6"><Product /></div>} />
+            <Route path="/add-product" element={<div className="p-2 sm:p-4 lg:p-6"><AddProduct /></div>} />
+            <Route path="/edit-product/:id" element={<div className="p-2 sm:p-4 lg:p-6"><EditProduct /></div>} />
+            <Route path="/orders" element={<div className="p-2 sm:p-4 lg:p-6"><Order /></div>} />
             <Route path="/create-order" element={<CreateOrder />} />
-            <Route path="/edit-order/:id" element={<EditOrder />} />
-            <Route path="/quotation" element={<Quotation />} />
-            <Route path="/quotation-list" element={<QuotationList />} />
+            <Route path="/edit-order/:id" element={<div className="p-2 sm:p-4 lg:p-6"><EditOrder /></div>} />
+            <Route path="/quotation" element={<div className="p-2 sm:p-4 lg:p-6"><Quotation /></div>} />
+            <Route path="/quotation-list" element={<div className="p-2 sm:p-4 lg:p-6"><QuotationList /></div>} />
           </Routes>
-          </div>
         </div>
       </div>
       <ToastContainer

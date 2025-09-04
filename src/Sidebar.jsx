@@ -9,7 +9,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'categories', label: 'Categories', path: '/categories' },
     { id: 'products', label: 'Products', path: '/products' },
-    { id: 'orders', label: 'Orders', path: '/orders' },
+    { id: 'orders', label: 'Customer List', path: '/orders' },
     { id: 'quotations', label: 'Quotation List', path: '/quotation-list' }
   ]
 

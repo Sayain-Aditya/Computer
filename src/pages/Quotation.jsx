@@ -33,7 +33,7 @@ const Quotation = () => {
   }
 
   const handleWhatsAppShare = () => {
-    const message = `Computer Shop Quotation for ${orderData.customer.name}\nTotal: $${orderData.totalAmount.toFixed(2)}\n\nItems:\n${orderData.products.map(item => `• ${item.name} - Qty: ${item.orderQuantity} - $${(item.sellingRate * item.orderQuantity).toFixed(2)}`).join('\n')}\n\nTo get the PDF version, please use the Print button and save as PDF.\n\nThank you for your business!`
+    const message = `Computer Shop Quotation for ${orderData.customer.name}\nTotal: ₹${orderData.totalAmount.toFixed(2)}\n\nItems:\n${orderData.products.map(item => `• ${item.name} - Qty: ${item.orderQuantity} - ₹${(item.sellingRate * item.orderQuantity).toFixed(2)}`).join('\n')}\n\nTo get the PDF version, please use the Print button and save as PDF.\n\nThank you for your business!`
     
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
     window.open(whatsappUrl, '_blank')
@@ -118,8 +118,8 @@ const Quotation = () => {
                     </div>
                   </td>
                   <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-right font-medium">${item.sellingRate}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-right font-bold">${(item.sellingRate * item.orderQuantity).toFixed(2)}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-right font-medium">₹{item.sellingRate}</td>
+                  <td className="border border-gray-300 px-6 py-4 text-right font-bold">₹{(item.sellingRate * item.orderQuantity).toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -131,15 +131,15 @@ const Quotation = () => {
           <div className="w-full max-w-80 bg-gray-50 p-4 sm:p-6 rounded-lg border-2 border-gray-300">
             <div className="flex justify-between py-3 border-b border-gray-300 text-lg">
               <span className="font-medium">Subtotal:</span>
-              <span className="font-semibold">${orderData.totalAmount.toFixed(2)}</span>
+              <span className="font-semibold">₹{orderData.totalAmount.toFixed(2)}</span>
             </div>
             <div className="flex justify-between py-3 border-b border-gray-300 text-lg">
               <span className="font-medium">Tax (0%):</span>
-              <span className="font-semibold">$0.00</span>
+              <span className="font-semibold">₹0.00</span>
             </div>
             <div className="flex justify-between py-4 font-bold text-2xl text-gray-800 border-t-2 border-gray-400 mt-2">
               <span>TOTAL:</span>
-              <span>${orderData.totalAmount.toFixed(2)}</span>
+              <span>₹{orderData.totalAmount.toFixed(2)}</span>
             </div>
           </div>
         </div>

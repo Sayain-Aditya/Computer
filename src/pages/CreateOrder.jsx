@@ -50,63 +50,29 @@ const CreateOrder = () => {
     return products.filter(product => product.category?._id === selectedCategory)
   }
 
-  const checkCompatibility = (selectedProduct) => {
-    const compatibleProducts = []
-    
-    getFilteredProducts().forEach(product => {
-      if (product._id !== selectedProduct._id) {
-        const compatibility = getProductCompatibility(selectedProduct, product)
-        if (compatibility.isCompatible) {
-          compatibleProducts.push({
-            ...product,
-            compatibilityScore: compatibility.score,
-            matchingFeatures: compatibility.matchingFeatures
-          })
-        }
-      }
-    })
-
-    if (compatibleProducts.length > 0) {
-      setCompatibleProducts(compatibleProducts)
+  const fetchCompatibleProducts = async (productId) => {
+    try {
+      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
+      const compatibleData = response.data.compatibleProducts || []
+      const selectedMotherboard = response.data.product
+      
+      // Include the selected motherboard in the display
+      const productsToShow = selectedMotherboard ? [selectedMotherboard, ...compatibleData] : compatibleData
+      
+      setCompatibleProducts(productsToShow)
       setShowCompatible(true)
-    } else {
-      toast.info('No compatible products found in the current list')
+      if (compatibleData.length === 0) {
+        toast.info('No compatible products found')
+      }
+    } catch (error) {
+      console.error('Error fetching compatible products:', error)
+      setCompatibleProducts([])
+      setShowCompatible(true)
+      toast.error('Failed to fetch compatible products')
     }
   }
 
-  const getProductCompatibility = (product1, product2) => {
-    const attrs1 = product1.attributes || {}
-    const attrs2 = product2.attributes || {}
-    
-    const matchingFeatures = []
-    let totalFeatures = 0
-    let matchingCount = 0
 
-    const allKeys = [...new Set([...Object.keys(attrs1), ...Object.keys(attrs2)])]
-    
-    allKeys.forEach(key => {
-      if (attrs1[key] && attrs2[key]) {
-        totalFeatures++
-        if (attrs1[key].toLowerCase() === attrs2[key].toLowerCase()) {
-          matchingCount++
-          matchingFeatures.push(key)
-        }
-      }
-    })
-
-    if (product1.brand && product2.brand) {
-      totalFeatures++
-      if (product1.brand.toLowerCase() === product2.brand.toLowerCase()) {
-        matchingCount++
-        matchingFeatures.push('Brand')
-      }
-    }
-
-    const score = totalFeatures > 0 ? (matchingCount / totalFeatures) * 100 : 0
-    const isCompatible = score > 30
-
-    return { isCompatible, score, matchingFeatures }
-  }
 
   const addToOrder = (product, quantity = 1) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
@@ -418,17 +384,19 @@ const CreateOrder = () => {
                           >
                             Add
                           </motion.button>
-                          <motion.button
-                            onClick={() => checkCompatibility(product)}
-                            className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
-                            whileHover={{ 
-                              scale: 1.1,
-                              backgroundColor: "#7c3aed"
-                            }}
-                            whileTap={{ scale: 0.9 }}
-                          >
-                            Check
-                          </motion.button>
+                          {product.category?.name?.toLowerCase().includes('motherboard') && (
+                            <motion.button
+                              onClick={() => fetchCompatibleProducts(product._id)}
+                              className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
+                              whileHover={{ 
+                                scale: 1.1,
+                                backgroundColor: "#7c3aed"
+                              }}
+                              whileTap={{ scale: 0.9 }}
+                            >
+                              Compatible
+                            </motion.button>
+                          )}
                         </div>
                       </td>
                     </motion.tr>

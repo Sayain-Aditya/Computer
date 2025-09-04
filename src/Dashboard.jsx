@@ -41,34 +41,60 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedOrderCategory) {
       fetchCategoryData('orders', selectedOrderCategory);
-    } else {
-      fetchDashboardData();
     }
   }, [selectedOrderCategory]);
 
   useEffect(() => {
     if (selectedSalesCategory) {
       fetchCategoryData('sales', selectedSalesCategory);
-    } else {
-      fetchDashboardData();
     }
   }, [selectedSalesCategory]);
 
   const fetchCategoryData = async (type, categoryId) => {
     try {
-      const endpoint = type === 'orders' 
-        ? `https://computer-shop-ecru.vercel.app/api/dashboard/orders/yearly?category=${categoryId}`
-        : `https://computer-shop-ecru.vercel.app/api/dashboard/sales/yearly?category=${categoryId}`;
+      // Fetch all orders and filter by category
+      const ordersRes = await fetch('https://computer-shop-ecru.vercel.app/api/orders/get');
+      const ordersResponse = await ordersRes.json();
+      const allOrders = ordersResponse.orders || ordersResponse.data || [];
       
-      console.log(`Fetching ${type} data for category:`, categoryId, 'from:', endpoint);
-      const response = await fetch(endpoint);
-      const data = await response.json();
-      console.log(`Received ${type} data:`, data);
+      // Filter orders by category
+      const filteredOrders = allOrders.filter(order => {
+        return order.items?.some(item => {
+          const productCategory = typeof item.product === 'object' 
+            ? item.product?.category?._id || item.product?.category
+            : null;
+          return productCategory === categoryId;
+        });
+      });
+      
+      const currentYear = new Date().getFullYear();
+      const monthlyData = Array(12).fill(0);
+      
+      filteredOrders.forEach(order => {
+        const orderDate = new Date(order.createdAt);
+        if (orderDate.getFullYear() === currentYear) {
+          const month = orderDate.getMonth();
+          if (type === 'orders') {
+            monthlyData[month]++;
+          } else {
+            const orderTotal = order.items?.reduce((total, item) => {
+              const productCategory = typeof item.product === 'object' 
+                ? item.product?.category?._id || item.product?.category
+                : null;
+              if (productCategory === categoryId) {
+                return total + ((item.price || 0) * (item.quantity || 0));
+              }
+              return total;
+            }, 0) || 0;
+            monthlyData[month] += orderTotal;
+          }
+        }
+      });
       
       if (type === 'orders') {
-        setStats(prev => ({ ...prev, yearlyOrders: data }));
+        setStats(prev => ({ ...prev, yearlyOrders: monthlyData }));
       } else {
-        setStats(prev => ({ ...prev, yearlySales: data }));
+        setStats(prev => ({ ...prev, yearlySales: monthlyData }));
       }
     } catch (error) {
       console.error(`Error fetching category ${type} data:`, error);
@@ -132,10 +158,18 @@ const Dashboard = () => {
 
   // Filter data based on selected category
   const getFilteredOrderData = () => {
+    if (!selectedOrderCategory) {
+      // Show all data when no category is selected
+      return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
+    }
     return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
   const getFilteredSalesData = () => {
+    if (!selectedSalesCategory) {
+      // Show all data when no category is selected
+      return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
+    }
     return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
   };
 
@@ -284,21 +318,21 @@ const Dashboard = () => {
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Categories</h3>
-          <p className="text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Categories</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
-          <p className="text-3xl font-bold text-green-600">{Array.isArray(stats.yearlyOrders) ? stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600">{Array.isArray(stats.yearlyOrders) ? stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
-          <p className="text-3xl font-bold text-purple-600">₹{Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0).toLocaleString() : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
+          <p className="text-xl sm:text-3xl font-bold text-purple-600">₹{Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0).toLocaleString() : 0}</p>
         </div>
-        <div className="bg-white p-6 rounded-lg shadow">
-          <h3 className="text-lg font-semibold text-gray-600">Total Products</h3>
-          <p className="text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
+        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
+          <p className="text-2xl sm:text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
         </div>
       </div>
 
@@ -312,7 +346,12 @@ const Dashboard = () => {
           <div className="mb-4">
             <select
               value={selectedOrderCategory}
-              onChange={(e) => setSelectedOrderCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedOrderCategory(e.target.value);
+                if (!e.target.value) {
+                  fetchDashboardData();
+                }
+              }}
               className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>
@@ -336,7 +375,12 @@ const Dashboard = () => {
           <div className="mb-4">
             <select
               value={selectedSalesCategory}
-              onChange={(e) => setSelectedSalesCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedSalesCategory(e.target.value);
+                if (!e.target.value) {
+                  fetchDashboardData();
+                }
+              }}
               className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
             >
               <option value="">All Categories</option>

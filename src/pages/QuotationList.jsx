@@ -34,24 +34,22 @@ const QuotationList = () => {
     
     try {
       await axios.delete(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}`)
-      alert('Quotation deleted successfully!')
+      toast.success('Quotation deleted successfully!')
       fetchQuotations()
     } catch (error) {
       console.error('Error deleting quotation:', error)
-      alert('Failed to delete quotation. Please try again.')
+      toast.error('Failed to delete quotation. Please try again.')
     }
   }
 
   const handleConvertToOrder = async (quotationId) => {
-    if (!confirm('Are you sure you want to convert this quotation to an order?')) return
-    
     try {
       await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}/convert`)
-      alert('Quotation converted to order successfully!')
+      toast.success('✅ Quotation converted to order successfully!')
       fetchQuotations()
     } catch (error) {
       console.error('Error converting quotation:', error)
-      alert('Failed to convert quotation. Please try again.')
+      toast.error('❌ Failed to convert quotation. Please try again.')
     }
   }
 
@@ -216,7 +214,7 @@ const QuotationList = () => {
                     })
                   } catch (error) {
                     console.error('Error fetching products:', error)
-                    alert('Failed to load product details. Please try again.')
+                    toast.error('Failed to load product details. Please try again.')
                   }
                 }}
                 className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
@@ -358,7 +356,7 @@ const QuotationList = () => {
                             })
                           } catch (error) {
                             console.error('Error fetching products:', error)
-                            alert('Failed to load product details. Please try again.')
+                            toast.error('Failed to load product details. Please try again.')
                           }
                         }}
                         className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200"

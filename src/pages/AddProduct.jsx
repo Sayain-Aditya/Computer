@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
+import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const AddProduct = () => {
@@ -37,11 +38,11 @@ const AddProduct = () => {
     e.preventDefault()
     try {
       await axios.post('https://computer-shop-ecru.vercel.app/api/products/create', formData)
-      alert('Product created successfully!')
+      toast.success('Product created successfully!')
       navigate('/products')
     } catch (error) {
       console.error('Error creating product:', error)
-      alert('Failed to create product')
+      toast.error('Failed to create product')
     }
   }
 

@@ -13,6 +13,8 @@ const Product = () => {
   const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [searchTerm, setSearchTerm] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [productToDelete, setProductToDelete] = useState(null)
 
   useEffect(() => {
     fetchProducts(1)
@@ -46,16 +48,18 @@ const Product = () => {
     navigate(`/edit-product/${product._id}`)
   }
 
-  const handleDelete = async (id) => {
-    if (!confirm('Are you sure you want to delete this product?')) return
-    
+  const handleDelete = async () => {
     try {
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/products/delete/${id}`)
+      await axios.delete(`https://computer-shop-ecru.vercel.app/api/products/delete/${productToDelete}`)
       fetchProducts()
-      toast.success('Product deleted successfully!')
+      toast.success('✅ Product deleted successfully!')
+      setShowDeleteModal(false)
+      setProductToDelete(null)
     } catch (error) {
       console.error('Error deleting product:', error)
-      toast.error('Failed to delete product. Please try again.')
+      toast.error('❌ Failed to delete product. Please try again.')
+      setShowDeleteModal(false)
+      setProductToDelete(null)
     }
   }
 
@@ -226,7 +230,7 @@ const Product = () => {
                 Edit
               </button>
               <button 
-                onClick={() => handleDelete(product._id)} 
+                onClick={() => { setProductToDelete(product._id); setShowDeleteModal(true); }}
                 className="flex-1 px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
               >
                 Delete
@@ -318,7 +322,7 @@ const Product = () => {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleDelete(product._id)} 
+                        onClick={() => { setProductToDelete(product._id); setShowDeleteModal(true); }}
                         className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg hover:bg-rose-100"
                       >
                         Delete
@@ -374,6 +378,37 @@ const Product = () => {
             Next
           </button>
         </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border-2 border-red-100 transform transition-all">
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-red-100 mb-4">
+                <svg className="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Delete Product</h3>
+              <p className="text-gray-600">Are you sure you want to delete this product? This action cannot be undone.</p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => { setShowDeleteModal(false); setProductToDelete(null); }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-6 py-3 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-colors"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

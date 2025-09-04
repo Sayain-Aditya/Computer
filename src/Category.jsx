@@ -63,6 +63,8 @@ const Category = () => {
     setFormData({ name: category.name, description: category.description })
     setEditId(category._id)
     setError('')
+    // Scroll to top to show the form
+    window.scrollTo({ top: 0, behavior: 'smooth' })
   }
 
   const handleDelete = async (id) => {

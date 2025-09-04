@@ -174,7 +174,7 @@ const CreateOrder = () => {
 
       <div className="grid grid-cols-1 xl:grid-cols-3 gap-4 sm:gap-6">
         {/* Customer Info */}
-        <div className="xl:col-span-1 order-2 xl:order-1">
+        <div className="xl:col-span-1 order-1 xl:order-1">
           <div className="p-6 bg-white border border-gray-200 rounded-lg shadow-sm mb-6">
             <h3 className="text-lg font-medium text-gray-800 mb-4">Customer Information</h3>
             <div className="space-y-4">
@@ -256,7 +256,7 @@ const CreateOrder = () => {
                   <motion.button
                     onClick={async () => {
                       if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                        alert('Please fill customer details and add products to generate quote')
+                        toast.error('Please fill customer details and add products to generate quote')
                         return
                       }
 
@@ -277,11 +277,11 @@ const CreateOrder = () => {
 
                       try {
                         await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        alert('Quotation generated and saved successfully!')
+                        toast.success('Quotation generated and saved successfully!')
                         navigate('/quotation-list')
                       } catch (error) {
                         console.error('Error generating quotation:', error)
-                        alert('Failed to generate quotation. Please try again.')
+                        toast.error('Failed to generate quotation. Please try again.')
                       }
                     }}
                     disabled={selectedProducts.length === 0}
@@ -298,7 +298,7 @@ const CreateOrder = () => {
         </div>
 
         {/* Products Table */}
-        <div className="xl:col-span-2 order-1 xl:order-2">
+        <div className="xl:col-span-2 order-2 xl:order-2">
           <div className="mb-4 flex justify-between items-center">
             <h3 className="text-lg font-medium text-gray-800">Available Products</h3>
             <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">

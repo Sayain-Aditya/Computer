@@ -174,6 +174,18 @@ const Product = () => {
               <div className="flex-1">
                 <h3 className="font-medium text-gray-900">{product.name}</h3>
                 <p className="text-sm text-gray-500">{product.modelNumber || 'No model'}</p>
+                {product.attributes && Object.keys(product.attributes).length > 0 && (
+                  <div className="mt-1 flex flex-wrap gap-1">
+                    {Object.entries(product.attributes).slice(0, 2).map(([key, value]) => (
+                      <span key={key} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                        {key}: {value}
+                      </span>
+                    ))}
+                    {Object.keys(product.attributes).length > 2 && (
+                      <span className="text-xs text-gray-400">+{Object.keys(product.attributes).length - 2} more</span>
+                    )}
+                  </div>
+                )}
               </div>
               <span className="text-lg font-bold text-gray-900">₹{product.sellingRate}</span>
             </div>
@@ -257,6 +269,18 @@ const Product = () => {
                     <div>
                       <div className="text-sm font-medium text-gray-800">{product.name}</div>
                       <div className="text-xs text-gray-500">{product.modelNumber || 'No model'}</div>
+                      {product.attributes && Object.keys(product.attributes).length > 0 && (
+                        <div className="mt-1 flex flex-wrap gap-1">
+                          {Object.entries(product.attributes).slice(0, 2).map(([key, value]) => (
+                            <span key={key} className="text-xs bg-blue-50 text-blue-600 px-2 py-1 rounded">
+                              {key}: {value}
+                            </span>
+                          ))}
+                          {Object.keys(product.attributes).length > 2 && (
+                            <span className="text-xs text-gray-400">+{Object.keys(product.attributes).length - 2} more</span>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </td>
                   <td className="px-6 py-4">

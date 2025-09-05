@@ -103,15 +103,20 @@ const CreateOrder = () => {
   }
 
   const addToOrder = (product, quantity = 1) => {
+    console.log('Adding product to order:', product.name, 'Current selectedProducts:', selectedProducts.length)
     const existingItem = selectedProducts.find(item => item._id === product._id)
     if (existingItem) {
-      setSelectedProducts(selectedProducts.map(item =>
+      const updatedProducts = selectedProducts.map(item =>
         item._id === product._id 
           ? { ...item, orderQuantity: item.orderQuantity + quantity }
           : item
-      ))
+      )
+      setSelectedProducts(updatedProducts)
+      console.log('Updated existing item, new count:', updatedProducts.length)
     } else {
-      setSelectedProducts([...selectedProducts, { ...product, orderQuantity: quantity }])
+      const newProducts = [...selectedProducts, { ...product, orderQuantity: quantity }]
+      setSelectedProducts(newProducts)
+      console.log('Added new item, new count:', newProducts.length)
     }
     
     // Auto-show compatible products if motherboard is added
@@ -240,115 +245,109 @@ const CreateOrder = () => {
 
       <div className="flex flex-col xl:flex-row gap-6 flex-1">
         {/* Left Sidebar - Customer Info and Order Summary */}
-        <div className="xl:w-1/3 order-1 xl:order-1 flex flex-col">
+        <div className="xl:w-1/3 order-1 xl:order-1 flex flex-col xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)]">
           {/* Customer Info */}
-          <div className="p-6 bg-white border border-gray-200 rounded-xl shadow-lg mb-6">
-          <h3 className="text-xl font-bold text-gray-900 mb-4 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
+          <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-lg mb-3 flex-shrink-0">
+          <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center">
+            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
             Customer Information
           </h3>
-          <div className="space-y-4">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Customer Name *"
-                value={customerInfo.name}
-                onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="email"
-                placeholder="Email Address *"
-                value={customerInfo.email}
-                onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
-              />
-            </div>
-            <div className="relative">
-              <input
-                type="tel"
-                placeholder="Phone Number (10 digits)"
-                value={customerInfo.phone}
-                onChange={(e) => {
-                  const value = e.target.value.replace(/\D/g, '').slice(0, 10)
-                  setCustomerInfo({...customerInfo, phone: value})
-                }}
-                maxLength={10}
-                pattern="[0-9]{10}"
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
-              />
-            </div>
-            <div className="relative">
-              <textarea
-                placeholder="Address (Optional)"
-                value={customerInfo.address}
-                onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-                className="w-full px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 h-24 resize-none text-sm transition-all duration-200"
-              />
-            </div>
+          <div className="space-y-2">
+            <input
+              type="text"
+              placeholder="Customer Name *"
+              value={customerInfo.name}
+              onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
+            />
+            <input
+              type="email"
+              placeholder="Email Address *"
+              value={customerInfo.email}
+              onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
+            />
+            <input
+              type="tel"
+              placeholder="Phone Number (10 digits)"
+              value={customerInfo.phone}
+              onChange={(e) => {
+                const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+                setCustomerInfo({...customerInfo, phone: value})
+              }}
+              maxLength={10}
+              pattern="[0-9]{10}"
+              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
+            />
+            <textarea
+              placeholder="Address (Optional)"
+              value={customerInfo.address}
+              onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
+              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 h-10 resize-none text-xs transition-all duration-200"
+            />
           </div>
         </div>
 
         {/* Order Summary */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg">
-          <h3 className="text-xl font-bold text-gray-900 p-6 border-b border-gray-200 flex items-center">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col">
+          <h3 className="text-base xl:text-lg font-bold text-gray-900 p-3 xl:p-4 border-b border-gray-200 flex items-center flex-shrink-0">
+            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
             Order Summary
           </h3>
           
           {/* Items Area */}
-          <div className="p-6">
-            {selectedProducts.length === 0 ? (
-              <div className="text-center py-12">
-                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-2xl text-gray-400">🛒</span>
-                </div>
-                <p className="text-gray-500 text-lg">No items in order</p>
-                <p className="text-gray-400 text-sm mt-1">Add products to get started</p>
-              </div>
-            ) : (
-              <div className="space-y-4 mb-6">
-                {selectedProducts.map(item => (
-                  <div key={item._id} className="flex justify-between items-center p-4 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-xl hover:shadow-md transition-all duration-200">
-                    <div className="flex-1 min-w-0">
-                      <p className="font-semibold text-sm text-gray-900 truncate">{item.name}</p>
-                      <p className="text-xs text-gray-600 mt-1">₹{item.sellingRate} each</p>
-                    </div>
-                    <div className="flex items-center gap-3 ml-3">
-                      <button
-                        onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
-                        className="w-9 h-9 bg-red-500 text-white rounded-lg text-sm hover:bg-red-600 flex items-center justify-center transition-colors duration-200 shadow-sm"
-                      >
-                        −
-                      </button>
-                      <span className="text-sm font-bold w-10 text-center bg-white px-2 py-1 rounded border">{item.orderQuantity}</span>
-                      <button
-                        onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
-                        className="w-9 h-9 bg-green-500 text-white rounded-lg text-sm hover:bg-green-600 flex items-center justify-center transition-colors duration-200 shadow-sm"
-                      >
-                        +
-                      </button>
-                    </div>
+          <div className="p-3 xl:p-4 flex-1 flex flex-col">
+            <div className="mb-3 xl:mb-4">
+              {selectedProducts.length === 0 ? (
+                <div className="text-center py-4 xl:py-6">
+                  <div className="w-8 xl:w-10 h-8 xl:h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                    <span className="text-base xl:text-lg text-gray-400">🛒</span>
                   </div>
-                ))}
-              </div>
-            )}
+                  <p className="text-gray-500 text-xs xl:text-sm">No items in order</p>
+                  <p className="text-gray-400 text-xs">Add products to get started</p>
+                </div>
+              ) : (
+                <div className="space-y-2 max-h-[120px] xl:max-h-[150px] overflow-y-auto">
+                  {selectedProducts.map(item => (
+                    <div key={item._id} className="flex justify-between items-center p-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-xs text-gray-900 truncate">{item.name}</p>
+                        <p className="text-xs text-gray-600">₹{item.sellingRate} each</p>
+                      </div>
+                      <div className="flex items-center gap-1 ml-2">
+                        <button
+                          onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
+                          className="w-6 h-6 bg-red-500 text-white rounded text-xs hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                        >
+                          −
+                        </button>
+                        <span className="text-xs font-bold w-6 text-center bg-white px-1 py-0.5 rounded border">{item.orderQuantity}</span>
+                        <button
+                          onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
+                          className="w-6 h-6 bg-green-500 text-white rounded text-xs hover:bg-green-600 flex items-center justify-center transition-colors duration-200"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
             
             {/* Total and Buttons */}
-            <div className="border-t-2 border-gray-200 pt-6">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-xl mb-6">
+            <div className="border-t-2 border-gray-200 pt-3 xl:pt-4 flex-shrink-0">
+              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-2 xl:p-3 rounded-lg mb-3 xl:mb-4">
                 <div className="flex justify-between items-center">
-                  <span className="text-lg font-semibold text-gray-700">Total Amount:</span>
-                  <span className="text-2xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                  <span className="text-sm xl:text-base font-semibold text-gray-700">Total Amount:</span>
+                  <span className="text-lg xl:text-xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
                 </div>
               </div>
-              <div className="flex flex-col sm:flex-row gap-4">
+              <div className="flex flex-col sm:flex-row gap-2">
                   <motion.button
                     onClick={handleSubmitOrder}
                     disabled={selectedProducts.length === 0}
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-xl hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                    className="flex-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transition-all duration-200"
                     whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
                     whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
                   >
@@ -357,18 +356,18 @@ const CreateOrder = () => {
                   <motion.button
                     onClick={async () => {
                       if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                        alert('Please fill customer details and add products to generate quote')
+                        toast.error('Please fill customer details and add products to generate quote')
                         return
                       }
                       
                       if (customerInfo.phone && customerInfo.phone.length !== 10) {
-                        alert('Phone number must be exactly 10 digits')
+                        toast.error('Phone number must be exactly 10 digits')
                         return
                       }
                       
                       const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
                       if (!emailRegex.test(customerInfo.email)) {
-                        alert('Please enter a valid email address')
+                        toast.error('Please enter a valid email address')
                         return
                       }
 
@@ -389,15 +388,17 @@ const CreateOrder = () => {
 
                       try {
                         await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        alert('Quotation generated and saved successfully!')
-                        navigate('/quotation-list')
+                        toast.success('Quotation generated and saved successfully!')
+                        setTimeout(() => {
+                          navigate('/quotation-list')
+                        }, 1500)
                       } catch (error) {
                         console.error('Error generating quotation:', error)
-                        alert('Failed to generate quotation. Please try again.')
+                        toast.error('Failed to generate quotation. Please try again.')
                       }
                     }}
                     disabled={selectedProducts.length === 0}
-                    className="flex-1 px-6 py-4 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-xl hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                    className="flex-1 px-2 py-1.5 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transition-all duration-200"
                     whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
                     whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
                   >
@@ -407,11 +408,10 @@ const CreateOrder = () => {
               </div>
           </div>
         </div>
-
         </div>
 
         {/* Products Section - Second on mobile */}
-        <div className="xl:w-2/3 order-3 xl:order-2 flex-1">
+        <div className="xl:w-2/3 order-3 xl:order-2 flex-1 xl:min-h-screen">
           <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
             <h3 className="text-xl font-bold text-gray-900 flex items-center">
               <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>

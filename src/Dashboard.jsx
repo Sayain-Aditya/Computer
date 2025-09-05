@@ -29,6 +29,7 @@ const Dashboard = () => {
     categoryProducts: []
   });
   const [categories, setCategories] = useState([]);
+  const [allOrders, setAllOrders] = useState([]);
   const [selectedOrderCategory, setSelectedOrderCategory] = useState('');
   const [selectedSalesCategory, setSelectedSalesCategory] = useState('');
   const [loading, setLoading] = useState(true);
@@ -39,36 +40,72 @@ const Dashboard = () => {
   }, []);
 
   useEffect(() => {
-    if (selectedOrderCategory) {
-      fetchCategoryData('orders', selectedOrderCategory);
+    if (selectedOrderCategory && allOrders.length > 0) {
+      const filteredData = filterOrdersByCategory(selectedOrderCategory, 'orders');
+      setStats(prev => ({ ...prev, yearlyOrders: filteredData }));
+    } else if (!selectedOrderCategory && allOrders.length > 0) {
+      // Reset to all orders
+      const currentYear = new Date().getFullYear();
+      const monthlyOrders = Array(12).fill(0);
+      allOrders.forEach(order => {
+        const orderDate = new Date(order.createdAt);
+        if (orderDate.getFullYear() === currentYear) {
+          monthlyOrders[orderDate.getMonth()]++;
+        }
+      });
+      setStats(prev => ({ ...prev, yearlyOrders: monthlyOrders }));
     }
-  }, [selectedOrderCategory]);
+  }, [selectedOrderCategory, allOrders]);
 
   useEffect(() => {
-    if (selectedSalesCategory) {
-      fetchCategoryData('sales', selectedSalesCategory);
+    if (selectedSalesCategory && allOrders.length > 0) {
+      const filteredData = filterOrdersByCategory(selectedSalesCategory, 'sales');
+      setStats(prev => ({ ...prev, yearlySales: filteredData }));
+    } else if (!selectedSalesCategory && allOrders.length > 0) {
+      // Reset to all sales
+      const currentYear = new Date().getFullYear();
+      const monthlySales = Array(12).fill(0);
+      allOrders.forEach(order => {
+        const orderDate = new Date(order.createdAt);
+        if (orderDate.getFullYear() === currentYear) {
+          const orderTotal = order.items?.reduce((total, item) => {
+            return total + ((item.price || 0) * (item.quantity || 0));
+          }, 0) || 0;
+          monthlySales[orderDate.getMonth()] += orderTotal;
+        }
+      });
+      setStats(prev => ({ ...prev, yearlySales: monthlySales }));
     }
-  }, [selectedSalesCategory]);
+  }, [selectedSalesCategory, allOrders]);
 
-  const fetchCategoryData = async (type, categoryId) => {
-    try {
-      const endpoint = type === 'orders' 
-        ? `https://computer-shop-ecru.vercel.app/api/dashboard/orders/yearly?category=${categoryId}`
-        : `https://computer-shop-ecru.vercel.app/api/dashboard/sales/yearly?category=${categoryId}`;
-      
-      console.log(`Fetching ${type} data for category:`, categoryId, 'from:', endpoint);
-      const response = await fetch(endpoint);
-      const data = await response.json();
-      console.log(`Received ${type} data:`, data);
-      
-      if (type === 'orders') {
-        setStats(prev => ({ ...prev, yearlyOrders: monthlyData }));
-      } else {
-        setStats(prev => ({ ...prev, yearlySales: monthlyData }));
+  const filterOrdersByCategory = (categoryId, type) => {
+    const currentYear = new Date().getFullYear();
+    const monthlyData = Array(12).fill(0);
+    
+    allOrders.forEach(order => {
+      const orderDate = new Date(order.createdAt);
+      if (orderDate.getFullYear() === currentYear) {
+        const month = orderDate.getMonth();
+        
+        // Check if order has items from the selected category
+        const hasCategory = order.items?.some(item => 
+          item.product?.category === categoryId || item.product?.category?._id === categoryId
+        );
+        
+        if (hasCategory) {
+          if (type === 'orders') {
+            monthlyData[month]++;
+          } else {
+            const orderTotal = order.items
+              ?.filter(item => item.product?.category === categoryId || item.product?.category?._id === categoryId)
+              ?.reduce((total, item) => total + ((item.price || 0) * (item.quantity || 0)), 0) || 0;
+            monthlyData[month] += orderTotal;
+          }
+        }
       }
-    } catch (error) {
-      console.error(`Error fetching category ${type} data:`, error);
-    }
+    });
+    
+    return monthlyData;
   };
 
   const fetchDashboardData = async () => {
@@ -84,6 +121,7 @@ const Dashboard = () => {
       const products = await productsRes.json()
       
       const orders = ordersResponse.orders || ordersResponse.data || []
+      setAllOrders(orders)
       
       // Process yearly orders data
       const currentYear = new Date().getFullYear()
@@ -126,30 +164,13 @@ const Dashboard = () => {
 
   const currentYear = new Date().getFullYear();
 
-  // Filter data based on selected category
-  const getFilteredOrderData = () => {
-    if (!selectedOrderCategory) {
-      // Show all data when no category is selected
-      return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-    }
-    return stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-  };
-
-  const getFilteredSalesData = () => {
-    if (!selectedSalesCategory) {
-      // Show all data when no category is selected
-      return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-    }
-    return stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0);
-  };
-
-  const fiveYears = Array.from({length: 5}, (_, i) => (currentYear - 4 + i).toString());
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
   const ordersChartData = {
-    labels: fiveYears,
+    labels: months,
     datasets: [{
-      label: 'Yearly Orders',
-      data: [0, 0, 0, 0, getFilteredOrderData()],
+      label: selectedOrderCategory ? `Orders - ${categories.find(c => c._id === selectedOrderCategory)?.name || 'Category'}` : 'Monthly Orders',
+      data: stats.yearlyOrders,
       backgroundColor: 'rgba(59, 130, 246, 0.8)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 2,
@@ -159,10 +180,10 @@ const Dashboard = () => {
   };
 
   const salesChartData = {
-    labels: fiveYears,
+    labels: months,
     datasets: [{
-      label: 'Yearly Sales (₹)',
-      data: [0, 0, 0, 0, getFilteredSalesData()],
+      label: selectedSalesCategory ? `Sales - ${categories.find(c => c._id === selectedSalesCategory)?.name || 'Category'}` : 'Monthly Sales (₹)',
+      data: stats.yearlySales,
       backgroundColor: 'rgba(34, 197, 94, 0.8)',
       borderColor: 'rgba(34, 197, 94, 1)',
       borderWidth: 2,

@@ -287,44 +287,47 @@ const EditOrder = () => {
   }
 
   return (
-    <div className="h-screen flex flex-col overflow-hidden">
-      <div className="p-4 bg-white border-b flex justify-between items-center">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-6">
+      <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white rounded-xl shadow-sm p-3 sm:p-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-800">Edit Order</h1>
-          <p className="text-gray-600 mt-1">Update order details</p>
+          <h1 className="text-xl font-bold text-gray-900 mb-0.5">Edit Order</h1>
+          <p className="text-gray-600 text-xs">Update order details</p>
         </div>
         <button 
           onClick={() => navigate('/orders')}
-          className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600"
+          className="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base font-medium shadow-sm"
         >
-          Back to Orders
+          ← Back to Orders
         </button>
       </div>
 
-      <div className="flex flex-1 min-h-0">
-        {/* Fixed Sidebar */}
-        <div className="w-80 bg-gray-50 border-r flex flex-col">
-          {/* Customer Information */}
-          <div className="p-4 bg-white border-b">
-            <h3 className="text-lg font-semibold mb-4">Customer Information</h3>
-            <div className="space-y-3">
+      <div className="flex flex-col xl:flex-row gap-6 flex-1">
+        {/* Left Sidebar - Customer Info and Order Summary */}
+        <div className="xl:w-1/3 order-1 xl:order-1 flex flex-col xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)]">
+          {/* Customer Info */}
+          <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-lg mb-3 flex-shrink-0">
+            <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center">
+              <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+              Customer Information
+            </h3>
+            <div className="space-y-2">
               <input
                 type="text"
-                placeholder="Customer Name"
+                placeholder="Customer Name *"
                 value={customerInfo.name}
                 onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+                className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
               />
               <input
                 type="email"
-                placeholder="Email (e.g., user@example.com)"
+                placeholder="Email Address *"
                 value={customerInfo.email}
                 onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+                className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
               />
               <input
                 type="tel"
-                placeholder="Phone (10 digits)"
+                placeholder="Phone Number (10 digits)"
                 value={customerInfo.phone}
                 onChange={(e) => {
                   const value = e.target.value.replace(/\D/g, '').slice(0, 10)
@@ -332,99 +335,119 @@ const EditOrder = () => {
                 }}
                 maxLength={10}
                 pattern="[0-9]{10}"
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+                className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
               />
               <textarea
-                placeholder="Address"
+                placeholder="Address (Optional)"
                 value={customerInfo.address}
                 onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-                className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 h-16 resize-none text-sm"
+                className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 h-10 resize-none text-xs transition-all duration-200"
               />
             </div>
           </div>
 
           {/* Order Summary */}
-          <div className="flex-1 flex flex-col bg-white min-h-0">
-            <h3 className="text-lg font-semibold p-4 pb-3 border-b flex-shrink-0">Order Summary</h3>
-            <div className="flex-1 p-4 overflow-y-auto min-h-0">
-              {selectedProducts.length === 0 ? (
-                <p className="text-gray-500 text-center py-4">No items in order</p>
-              ) : (
-                <div className="space-y-2">
-                  {selectedProducts.map(item => (
-                    <div key={item._id} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                      <div className="flex-1">
-                        <p className="font-medium">{item.name}</p>
-                        <p className="text-xs text-gray-500">₹{item.sellingRate} each</p>
-                      </div>
-                      <div className="flex items-center gap-1">
-                        <button
-                          onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
-                          className="w-6 h-6 bg-red-600 text-white rounded text-xs hover:bg-red-700"
-                        >
-                          -
-                        </button>
-                        <span className="font-medium w-6 text-center text-xs">{item.orderQuantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
-                          className="w-6 h-6 bg-green-600 text-white rounded text-xs hover:bg-green-700"
-                        >
-                          +
-                        </button>
-                      </div>
+          <div className="bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col">
+            <h3 className="text-base xl:text-lg font-bold text-gray-900 p-3 xl:p-4 border-b border-gray-200 flex items-center flex-shrink-0">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
+              Order Summary
+            </h3>
+            
+            {/* Items Area */}
+            <div className="p-3 xl:p-4 flex-1 flex flex-col">
+              <div className="mb-3 xl:mb-4">
+                {selectedProducts.length === 0 ? (
+                  <div className="text-center py-4 xl:py-6">
+                    <div className="w-8 xl:w-10 h-8 xl:h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
+                      <span className="text-base xl:text-lg text-gray-400">🛒</span>
                     </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            <div className="p-4 border-t flex-shrink-0">
-              <div className="flex justify-between font-bold text-lg mb-3">
-                <span>Total:</span>
-                <span className="text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                    <p className="text-gray-500 text-xs xl:text-sm">No items in order</p>
+                    <p className="text-gray-400 text-xs">Add products to get started</p>
+                  </div>
+                ) : (
+                  <div className="space-y-2 max-h-[120px] xl:max-h-[150px] overflow-y-auto">
+                    {selectedProducts.map(item => (
+                      <div key={item._id} className="flex justify-between items-center p-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
+                        <div className="flex-1 min-w-0">
+                          <p className="font-semibold text-xs text-gray-900 truncate">{item.name}</p>
+                          <p className="text-xs text-gray-600">₹{item.sellingRate} each</p>
+                        </div>
+                        <div className="flex items-center gap-1 ml-2">
+                          <button
+                            onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
+                            className="w-6 h-6 bg-red-500 text-white rounded text-xs hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                          >
+                            −
+                          </button>
+                          <span className="text-xs font-bold w-6 text-center bg-white px-1 py-0.5 rounded border">{item.orderQuantity}</span>
+                          <button
+                            onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
+                            className="w-6 h-6 bg-green-500 text-white rounded text-xs hover:bg-green-600 flex items-center justify-center transition-colors duration-200"
+                          >
+                            +
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
-              <motion.button
-                onClick={handleUpdateOrder}
-                disabled={selectedProducts.length === 0}
-                className="w-full px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm"
-                whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
-                whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
-              >
-                Update Order
-              </motion.button>
+              
+              {/* Total and Buttons */}
+              <div className="border-t-2 border-gray-200 pt-3 xl:pt-4 flex-shrink-0">
+                <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-2 xl:p-3 rounded-lg mb-3 xl:mb-4">
+                  <div className="flex justify-between items-center">
+                    <span className="text-sm xl:text-base font-semibold text-gray-700">Total Amount:</span>
+                    <span className="text-lg xl:text-xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                  </div>
+                </div>
+                <motion.button
+                  onClick={handleUpdateOrder}
+                  disabled={selectedProducts.length === 0}
+                  className="w-full px-2 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transition-all duration-200"
+                  whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                  whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                >
+                  🔄 Update Order
+                </motion.button>
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Scrollable Products Section */}
-        <div className="flex-1 overflow-y-auto p-4">
-          <div className="bg-white rounded-lg shadow-sm border">
-            <div className="p-4 border-b">
-              <div className="flex justify-between items-center">
-                <h3 className="text-lg font-semibold">Available Products</h3>
-                <div className="flex flex-col sm:flex-row gap-3 items-start sm:items-center">
-                  <select
-                    value={selectedCategory}
-                    onChange={(e) => setSelectedCategory(e.target.value)}
-                    className="px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="">All Categories</option>
-                    {categories.map(category => (
-                      <option key={category._id} value={category._id}>
-                        {category.name}
-                      </option>
-                    ))}
-                  </select>
-                  {showCompatible && (
-                    <button
-                      onClick={() => setShowCompatible(false)}
-                      className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
-                    >
-                      Show All Products
-                    </button>
-                  )}
-                </div>
-              </div>
+        {/* Products Section - Second on mobile */}
+        <div className="xl:w-2/3 order-3 xl:order-2 flex-1 xl:min-h-screen">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
+            <h3 className="text-xl font-bold text-gray-900 flex items-center">
+              <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
+              Available Products
+            </h3>
+            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+              <select
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+                className="w-full sm:w-auto px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
+              >
+                <option value="">🏷️ All Categories</option>
+                {categories.map(category => (
+                  <option key={category._id} value={category._id}>
+                    {category.name}
+                  </option>
+                ))}
+              </select>
+              {showCompatible && (
+                <button
+                  onClick={() => setShowCompatible(false)}
+                  className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 text-sm font-medium transition-all duration-200 shadow-sm"
+                >
+                  🔄 Show All Products
+                </button>
+              )}
             </div>
+          </div>
+
+          {/* Available Products Container - Mobile Card Layout */}
+          <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
             
             <div className="overflow-x-auto">
               <table className="w-full">

@@ -21,6 +21,7 @@ const CreateOrder = () => {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
+
   useEffect(() => {
     fetchProducts()
     fetchCategories()
@@ -355,22 +356,6 @@ const CreateOrder = () => {
                   </motion.button>
                   <motion.button
                     onClick={async () => {
-                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                        alert('Please fill customer details and add products to generate quote')
-                        return
-                      }
-                      
-                      if (customerInfo.phone && customerInfo.phone.length !== 10) {
-                        alert('Phone number must be exactly 10 digits')
-                        return
-                      }
-                      
-                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                      if (!emailRegex.test(customerInfo.email)) {
-                        alert('Please enter a valid email address')
-                        return
-                      }
-
                       const quotationData = {
                         customerName: customerInfo.name,
                         customerEmail: customerInfo.email,
@@ -388,11 +373,10 @@ const CreateOrder = () => {
 
                       try {
                         await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        alert('Quotation generated and saved successfully!')
-                        navigate('/quotation-list')
+                        toast.success('Quote generated successfully!')
                       } catch (error) {
                         console.error('Error generating quotation:', error)
-                        alert('Failed to generate quotation. Please try again.')
+                        toast.error('Failed to generate quotation. Please try again.')
                       }
                     }}
                     disabled={selectedProducts.length === 0}
@@ -676,6 +660,8 @@ const CreateOrder = () => {
           </div>
         </div>
       )}
+
+
     </div>
   )
 }

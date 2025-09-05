@@ -8,6 +8,8 @@ const QuotationList = () => {
   const navigate = useNavigate()
   const [quotations, setQuotations] = useState([])
   const [loading, setLoading] = useState(true)
+  const [showConvertModal, setShowConvertModal] = useState(false)
+  const [quotationToConvert, setQuotationToConvert] = useState(null)
 
   useEffect(() => {
     fetchQuotations()
@@ -42,14 +44,18 @@ const QuotationList = () => {
     }
   }
 
-  const handleConvertToOrder = async (quotationId) => {
+  const handleConvertToOrder = async () => {
     try {
-      await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}/convert`)
+      await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationToConvert}/convert`)
       toast.success('✅ Quotation converted to order successfully!')
       fetchQuotations()
+      setShowConvertModal(false)
+      setQuotationToConvert(null)
     } catch (error) {
       console.error('Error converting quotation:', error)
       toast.error('❌ Failed to convert quotation. Please try again.')
+      setShowConvertModal(false)
+      setQuotationToConvert(null)
     }
   }
 
@@ -222,7 +228,7 @@ const QuotationList = () => {
                 View
               </button>
               <button 
-                onClick={() => handleConvertToOrder(quotation._id)}
+                onClick={() => { setQuotationToConvert(quotation._id); setShowConvertModal(true); }}
                 className="px-3 py-2 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100"
               >
                 Convert
@@ -364,7 +370,7 @@ const QuotationList = () => {
                         View
                       </button>
                       <button 
-                        onClick={() => handleConvertToOrder(quotation._id)}
+                        onClick={() => { setQuotationToConvert(quotation._id); setShowConvertModal(true); }}
                         className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100"
                       >
                         Convert
@@ -397,6 +403,37 @@ const QuotationList = () => {
           </div>
         )}
       </motion.div>
+
+      {/* Convert Confirmation Modal */}
+      {showConvertModal && (
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border-2 border-green-100 transform transition-all">
+            <div className="text-center mb-6">
+              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
+                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+              <h3 className="text-xl font-bold text-gray-900 mb-2">Convert to Order</h3>
+              <p className="text-gray-600">Are you sure you want to convert this quotation to an order?</p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              <button
+                onClick={() => { setShowConvertModal(false); setQuotationToConvert(null); }}
+                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleConvertToOrder}
+                className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
+              >
+                Convert
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

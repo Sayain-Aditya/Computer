@@ -21,7 +21,6 @@ const CreateOrder = () => {
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showModal, setShowModal] = useState(false)
 
-
   useEffect(() => {
     fetchProducts()
     fetchCategories()
@@ -231,10 +230,10 @@ const CreateOrder = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-6">
-      <div className="mb-5 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
+      <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div>
-          <h1 className="text-xl font-bold text-gray-900 mb-0.5">Create Order</h1>
-          <p className="text-gray-600 text-xs">Take customer orders for computer parts</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Create Order</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Take customer orders for computer parts</p>
         </div>
         <button 
           onClick={() => navigate('/orders')}
@@ -356,6 +355,22 @@ const CreateOrder = () => {
                   </motion.button>
                   <motion.button
                     onClick={async () => {
+                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
+                        toast.error('Please fill customer details and add products to generate quote')
+                        return
+                      }
+                      
+                      if (customerInfo.phone && customerInfo.phone.length !== 10) {
+                        toast.error('Phone number must be exactly 10 digits')
+                        return
+                      }
+                      
+                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                      if (!emailRegex.test(customerInfo.email)) {
+                        toast.error('Please enter a valid email address')
+                        return
+                      }
+
                       const quotationData = {
                         customerName: customerInfo.name,
                         customerEmail: customerInfo.email,
@@ -373,7 +388,10 @@ const CreateOrder = () => {
 
                       try {
                         await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        toast.success('Quote generated successfully!')
+                        toast.success('Quotation generated and saved successfully!')
+                        setTimeout(() => {
+                          navigate('/quotation-list')
+                        }, 1500)
                       } catch (error) {
                         console.error('Error generating quotation:', error)
                         toast.error('Failed to generate quotation. Please try again.')
@@ -394,7 +412,7 @@ const CreateOrder = () => {
 
         {/* Products Section - Second on mobile */}
         <div className="xl:w-2/3 order-3 xl:order-2 flex-1 xl:min-h-screen">
-          <div className="mb-4 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3 bg-white rounded-xl shadow-sm p-3 sm:p-4">
+          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
             <h3 className="text-xl font-bold text-gray-900 flex items-center">
               <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
               Available Products
@@ -660,8 +678,6 @@ const CreateOrder = () => {
           </div>
         </div>
       )}
-
-
     </div>
   )
 }

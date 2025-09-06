@@ -627,6 +627,7 @@ const EditOrder = () => {
               </div>
             </div>
           )}
+        </div>
       </div>
 
       {/* Cart Modal */}

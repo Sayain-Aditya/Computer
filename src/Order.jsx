@@ -24,8 +24,10 @@ const Order = () => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
       const ordersData = response.data.orders || response.data.data || []
+      // Filter out quotations - only show actual orders
+      const actualOrders = ordersData.filter(order => order.type !== 'Quotation')
       // Sort orders by creation date (newest first)
-      const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      const sortedOrders = actualOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       setOrders(sortedOrders)
       setTotalPages(response.data.totalPages || 1)
       setCurrentPage(page)
@@ -382,20 +384,23 @@ const Order = () => {
                       }
                     }) || []
                     
-                    navigate('/quotation', {
-                      state: {
-                        orderData: {
-                          customer: {
-                            name: order.customerName,
-                            email: order.customerEmail,
-                            phone: order.customerPhone,
-                            address: order.address || 'Address not provided'
-                          },
-                          products: productsWithNames,
-                          totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
-                        }
+                    // Create short shareable PDF link
+                    const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                    
+                    // Open PDF in new tab
+                    window.open(shareableUrl, '_blank')
+                    
+                    // Copy link and show WhatsApp option
+                    navigator.clipboard.writeText(shareableUrl)
+                    
+                    const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0)?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                    
+                    setTimeout(() => {
+                      if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                        window.open(whatsappUrl, '_blank')
                       }
-                    })
+                    }, 1000)
                   } catch (error) {
                     console.error('Error fetching products:', error)
                     toast.error('Failed to load product details. Please try again.')
@@ -519,20 +524,23 @@ const Order = () => {
                               }
                             }) || []
                             
-                            navigate('/quotation', {
-                              state: {
-                                orderData: {
-                                  customer: {
-                                    name: order.customerName,
-                                    email: order.customerEmail,
-                                    phone: order.customerPhone,
-                                    address: order.address || 'Address not provided'
-                                  },
-                                  products: productsWithNames,
-                                  totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
-                                }
+                            // Create short shareable PDF link
+                            const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                            
+                            // Open PDF in new tab
+                            window.open(shareableUrl, '_blank')
+                            
+                            // Copy link and show WhatsApp option
+                            navigator.clipboard.writeText(shareableUrl)
+                            
+                            const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0)?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                            
+                            setTimeout(() => {
+                              if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                                window.open(whatsappUrl, '_blank')
                               }
-                            })
+                            }, 1000)
                           } catch (error) {
                             console.error('Error fetching products:', error)
                             toast.error('Failed to load product details. Please try again.')

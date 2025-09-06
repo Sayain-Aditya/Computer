@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
@@ -7,6 +7,7 @@ import axios from 'axios'
 const Product = () => {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
+  const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [editId, setEditId] = useState(null)
@@ -21,16 +22,56 @@ const Product = () => {
     fetchCategories()
   }, [])
 
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      fetchProducts(1)
+    }, 500)
+    return () => clearTimeout(delayedSearch)
+  }, [searchTerm, selectedCategory])
+
   const fetchProducts = async (page = 1) => {
     try {
-      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/all?page=${page}`)
-      console.log('API Response:', response.data)
-      setProducts(response.data.products || response.data)
-      setTotalPages(response.data.totalPages || 1)
+      setLoading(true)
+      let url
+      if (searchTerm) {
+        url = `https://computer-shop-ecru.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
+      } else {
+        url = `https://computer-shop-ecru.vercel.app/api/products/all?page=${page}`
+      }
+      
+      if (selectedCategory && !searchTerm) {
+        url += `&category=${selectedCategory}`
+      }
+      
+      console.log('Fetching URL:', url)
+      const response = await axios.get(url)
+      console.log('Full response:', response)
+      console.log('Response data:', response.data)
+      console.log('Data type:', typeof response.data)
+      console.log('Is array:', Array.isArray(response.data))
+      const data = response.data
+      
+      // Handle different response structures
+      let productsArray = []
+      if (Array.isArray(data)) {
+        productsArray = data
+      } else if (data && Array.isArray(data.products)) {
+        productsArray = data.products
+      } else if (data && Array.isArray(data.data)) {
+        productsArray = data.data
+      } else {
+        console.log('Unexpected data structure:', data)
+        productsArray = []
+      }
+      
+      console.log('Final products array:', productsArray)
+      setProducts(productsArray)
       setCurrentPage(page)
-      console.log('Total Pages:', response.data.totalPages)
     } catch (error) {
       console.error('Error fetching products:', error)
+      setProducts([])
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -87,21 +128,7 @@ const Product = () => {
 
 
   const getFilteredProducts = () => {
-    let filtered = products
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(product => product.category?._id === selectedCategory)
-    }
-    
-    if (searchTerm) {
-      filtered = filtered.filter(product => 
-        product.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.brand?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        product.modelNumber?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
-    }
-    
-    return filtered
+    return products || []
   }
 
   return (
@@ -145,7 +172,10 @@ const Product = () => {
             />
             <select
               value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
+              onChange={(e) => {
+                setSelectedCategory(e.target.value)
+                setCurrentPage(1)
+              }}
               className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full sm:w-auto"
             >
               <option value="">All Categories</option>
@@ -157,7 +187,7 @@ const Product = () => {
             </select>
           </div>
           <div className="text-sm text-gray-500 w-full lg:w-auto text-left lg:text-right">
-            {getFilteredProducts().length} products found
+            {Array.isArray(products) ? products.length : 0} products found
           </div>
         </div>
       </div>
@@ -166,7 +196,7 @@ const Product = () => {
 
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
-        {getFilteredProducts().map((product, index) => (
+        {Array.isArray(products) && products.map((product, index) => (
           <motion.div
             key={product._id}
             className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
@@ -261,7 +291,7 @@ const Product = () => {
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
-              {getFilteredProducts().map((product, index) => (
+              {Array.isArray(products) && products.map((product, index) => (
                 <motion.tr 
                   key={product._id}
                   className="hover:bg-gray-50"
@@ -335,7 +365,7 @@ const Product = () => {
           </table>
         </div>
         
-        {getFilteredProducts().length === 0 && (
+        {(!Array.isArray(products) || products.length === 0) && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📦</div>
             <p className="text-gray-500 text-lg mb-2">

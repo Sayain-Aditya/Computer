@@ -20,6 +20,9 @@ const CreateOrder = () => {
   const [showCompatible, setShowCompatible] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showModal, setShowModal] = useState(false)
+  const [showCartModal, setShowCartModal] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingProduct, setPendingProduct] = useState(null)
 
   useEffect(() => {
     fetchProducts()
@@ -62,7 +65,8 @@ const CreateOrder = () => {
   }
 
   const getFilteredProducts = () => {
-    return products
+    if (!selectedCategory) return products
+    return products.filter(product => product.category?._id === selectedCategory)
   }
 
   const fetchCompatibleProducts = async (productId) => {
@@ -103,20 +107,14 @@ const CreateOrder = () => {
   }
 
   const addToOrder = (product, quantity = 1) => {
-    console.log('Adding product to order:', product.name, 'Current selectedProducts:', selectedProducts.length)
     const existingItem = selectedProducts.find(item => item._id === product._id)
     if (existingItem) {
-      const updatedProducts = selectedProducts.map(item =>
-        item._id === product._id 
-          ? { ...item, orderQuantity: item.orderQuantity + quantity }
-          : item
-      )
-      setSelectedProducts(updatedProducts)
-      console.log('Updated existing item, new count:', updatedProducts.length)
+      setPendingProduct({ product, quantity })
+      setShowConfirmModal(true)
+      return
     } else {
       const newProducts = [...selectedProducts, { ...product, orderQuantity: quantity }]
       setSelectedProducts(newProducts)
-      console.log('Added new item, new count:', newProducts.length)
     }
     
     // Auto-show compatible products if motherboard is added
@@ -243,203 +241,79 @@ const CreateOrder = () => {
         </button>
       </div>
 
-      <div className="flex flex-col xl:flex-row gap-6 flex-1">
-        {/* Left Sidebar - Customer Info and Order Summary */}
-        <div className="xl:w-1/3 order-1 xl:order-1 flex flex-col xl:sticky xl:top-6 xl:h-[calc(100vh-8rem)]">
-          {/* Customer Info */}
-          <div className="p-3 bg-white border border-gray-200 rounded-xl shadow-lg mb-3 flex-shrink-0">
-          <h3 className="text-sm font-bold text-gray-900 mb-2 flex items-center">
-            <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
-            Customer Information
+      {/* Customer Info Section */}
+      <div className="mb-6 bg-white rounded-xl shadow-sm p-4 sm:p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-4 flex items-center">
+          <span className="w-2 h-2 bg-blue-500 rounded-full mr-2"></span>
+          Customer Information
+        </h3>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          <input
+            type="text"
+            placeholder="Customer Name *"
+            value={customerInfo.name}
+            onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+            className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
+          />
+          <input
+            type="email"
+            placeholder="Email Address *"
+            value={customerInfo.email}
+            onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+            className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
+          />
+          <input
+            type="tel"
+            placeholder="Phone Number (10 digits)"
+            value={customerInfo.phone}
+            onChange={(e) => {
+              const value = e.target.value.replace(/\D/g, '').slice(0, 10)
+              setCustomerInfo({...customerInfo, phone: value})
+            }}
+            maxLength={10}
+            pattern="[0-9]{10}"
+            className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
+          />
+          <input
+            type="text"
+            placeholder="Address (Optional)"
+            value={customerInfo.address}
+            onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
+            className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
+          />
+        </div>
+      </div>
+
+      {/* Products Section */}
+      <div className="flex-1">
+        <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
+          <h3 className="text-xl font-bold text-gray-900 flex items-center">
+            <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
+            Available Products
           </h3>
-          <div className="space-y-2">
-            <input
-              type="text"
-              placeholder="Customer Name *"
-              value={customerInfo.name}
-              onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
-              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
-            />
-            <input
-              type="email"
-              placeholder="Email Address *"
-              value={customerInfo.email}
-              onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
-              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
-            />
-            <input
-              type="tel"
-              placeholder="Phone Number (10 digits)"
-              value={customerInfo.phone}
-              onChange={(e) => {
-                const value = e.target.value.replace(/\D/g, '').slice(0, 10)
-                setCustomerInfo({...customerInfo, phone: value})
-              }}
-              maxLength={10}
-              pattern="[0-9]{10}"
-              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-xs transition-all duration-200"
-            />
-            <textarea
-              placeholder="Address (Optional)"
-              value={customerInfo.address}
-              onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
-              className="w-full px-2 py-1.5 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 h-10 resize-none text-xs transition-all duration-200"
-            />
-          </div>
-        </div>
-
-        {/* Order Summary */}
-        <div className="bg-white border border-gray-200 rounded-xl shadow-lg flex flex-col">
-          <h3 className="text-base xl:text-lg font-bold text-gray-900 p-3 xl:p-4 border-b border-gray-200 flex items-center flex-shrink-0">
-            <span className="w-2 h-2 bg-green-500 rounded-full mr-2"></span>
-            Order Summary
-          </h3>
-          
-          {/* Items Area */}
-          <div className="p-3 xl:p-4 flex-1 flex flex-col">
-            <div className="mb-3 xl:mb-4">
-              {selectedProducts.length === 0 ? (
-                <div className="text-center py-4 xl:py-6">
-                  <div className="w-8 xl:w-10 h-8 xl:h-10 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-2">
-                    <span className="text-base xl:text-lg text-gray-400">🛒</span>
-                  </div>
-                  <p className="text-gray-500 text-xs xl:text-sm">No items in order</p>
-                  <p className="text-gray-400 text-xs">Add products to get started</p>
-                </div>
-              ) : (
-                <div className="space-y-2 max-h-[120px] xl:max-h-[150px] overflow-y-auto">
-                  {selectedProducts.map(item => (
-                    <div key={item._id} className="flex justify-between items-center p-2 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
-                      <div className="flex-1 min-w-0">
-                        <p className="font-semibold text-xs text-gray-900 truncate">{item.name}</p>
-                        <p className="text-xs text-gray-600">₹{item.sellingRate} each</p>
-                      </div>
-                      <div className="flex items-center gap-1 ml-2">
-                        <button
-                          onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
-                          className="w-6 h-6 bg-red-500 text-white rounded text-xs hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
-                        >
-                          −
-                        </button>
-                        <span className="text-xs font-bold w-6 text-center bg-white px-1 py-0.5 rounded border">{item.orderQuantity}</span>
-                        <button
-                          onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
-                          className="w-6 h-6 bg-green-500 text-white rounded text-xs hover:bg-green-600 flex items-center justify-center transition-colors duration-200"
-                        >
-                          +
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </div>
-            
-            {/* Total and Buttons */}
-            <div className="border-t-2 border-gray-200 pt-3 xl:pt-4 flex-shrink-0">
-              <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-2 xl:p-3 rounded-lg mb-3 xl:mb-4">
-                <div className="flex justify-between items-center">
-                  <span className="text-sm xl:text-base font-semibold text-gray-700">Total Amount:</span>
-                  <span className="text-lg xl:text-xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
-                </div>
-              </div>
-              <div className="flex flex-col sm:flex-row gap-2">
-                  <motion.button
-                    onClick={handleSubmitOrder}
-                    disabled={selectedProducts.length === 0}
-                    className="flex-1 px-2 py-1.5 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transition-all duration-200"
-                    whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
-                    whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
-                  >
-                    🛍️ Create Order
-                  </motion.button>
-                  <motion.button
-                    onClick={async () => {
-                      if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                        toast.error('Please fill customer details and add products to generate quote')
-                        return
-                      }
-                      
-                      if (customerInfo.phone && customerInfo.phone.length !== 10) {
-                        toast.error('Phone number must be exactly 10 digits')
-                        return
-                      }
-                      
-                      const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-                      if (!emailRegex.test(customerInfo.email)) {
-                        toast.error('Please enter a valid email address')
-                        return
-                      }
-
-                      const quotationData = {
-                        customerName: customerInfo.name,
-                        customerEmail: customerInfo.email,
-                        customerPhone: customerInfo.phone,
-                        address: customerInfo.address,
-                        type: 'Quotation',
-                        items: selectedProducts.map(item => ({
-                          product: item._id,
-                          quantity: item.orderQuantity,
-                          price: item.sellingRate
-                        })),
-                        totalAmount: getTotalAmount(),
-                        status: 'Pending'
-                      }
-
-                      try {
-                        await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                        toast.success('Quotation generated and saved successfully!')
-                        setTimeout(() => {
-                          navigate('/quotation-list')
-                        }, 1500)
-                      } catch (error) {
-                        console.error('Error generating quotation:', error)
-                        toast.error('Failed to generate quotation. Please try again.')
-                      }
-                    }}
-                    disabled={selectedProducts.length === 0}
-                    className="flex-1 px-2 py-1.5 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs shadow-lg transition-all duration-200"
-                    whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
-                    whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
-                  >
-                    📄 Generate Quote
-                  </motion.button>
-                </div>
-              </div>
-          </div>
-        </div>
-        </div>
-
-        {/* Products Section - Second on mobile */}
-        <div className="xl:w-2/3 order-3 xl:order-2 flex-1 xl:min-h-screen">
-          <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center">
-              <span className="w-2 h-2 bg-purple-500 rounded-full mr-3"></span>
-              Available Products
-            </h3>
-            <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
-              <select
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-                className="w-full sm:w-auto px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
+          <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="w-full sm:w-auto px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
+            >
+              <option value="">🏷️ All Categories</option>
+              {categories.map(category => (
+                <option key={category._id} value={category._id}>
+                  {category.name}
+                </option>
+              ))}
+            </select>
+            {showCompatible && (
+              <button
+                onClick={() => setShowCompatible(false)}
+                className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 text-sm font-medium transition-all duration-200 shadow-sm"
               >
-                <option value="">🏷️ All Categories</option>
-                {categories.map(category => (
-                  <option key={category._id} value={category._id}>
-                    {category.name}
-                  </option>
-                ))}
-              </select>
-              {showCompatible && (
-                <button
-                  onClick={() => setShowCompatible(false)}
-                  className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 text-sm font-medium transition-all duration-200 shadow-sm"
-                >
-                  🔄 Show All Products
-                </button>
-              )}
-            </div>
+                🔄 Show All Products
+              </button>
+            )}
           </div>
+        </div>
 
           {/* Available Products Container - Mobile Card Layout */}
           <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
@@ -462,7 +336,7 @@ const CreateOrder = () => {
                     return (
                     <motion.tr 
                       key={product._id} 
-                      className={`hover:bg-gray-50 ${isSelected ? 'bg-green-50' : ''}`}
+                      className={`${isSelected ? 'bg-green-50' : ''}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
@@ -513,7 +387,7 @@ const CreateOrder = () => {
                 return (
                   <motion.div 
                     key={product._id} 
-                    className={`p-3 border-b border-gray-200 ${isSelected ? 'bg-green-50' : 'hover:bg-gray-50'}`}
+                    className={`p-3 border-b border-gray-200 ${isSelected ? 'bg-green-50' : ''}`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     transition={{ delay: index * 0.02 }}
@@ -608,8 +482,141 @@ const CreateOrder = () => {
               </div>
             </div>
           )}
-        </div>
       </div>
+
+      {/* Cart Modal */}
+      {showCartModal && (
+        <div className="fixed inset-0 bg-transparent flex items-start justify-end z-50 p-4" style={{backdropFilter: 'blur(2px)'}}>
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full sm:w-96 h-[calc(100vh-8rem)] overflow-y-auto shadow-2xl mt-16 mr-4">
+            <div className="flex justify-between items-center mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+                Order Summary
+              </h3>
+              <button 
+                onClick={() => setShowCartModal(false)}
+                className="text-gray-400 hover:text-gray-600 text-3xl transition-colors duration-200"
+              >
+                ×
+              </button>
+            </div>
+            
+            {selectedProducts.length === 0 ? (
+              <div className="text-center py-8">
+                <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <span className="text-2xl text-gray-400">🛒</span>
+                </div>
+                <p className="text-gray-500 text-lg">No items in cart</p>
+                <p className="text-gray-400 text-sm mt-1">Add products to get started</p>
+              </div>
+            ) : (
+              <>
+                <div className="space-y-3 mb-6 max-h-60 overflow-y-auto">
+                  {selectedProducts.map(item => (
+                    <div key={item._id} className="flex justify-between items-center p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
+                      <div className="flex-1 min-w-0">
+                        <p className="font-semibold text-sm text-gray-900 truncate">{item.name}</p>
+                        <p className="text-sm text-gray-600">₹{item.sellingRate} each</p>
+                      </div>
+                      <div className="flex items-center gap-2 ml-3">
+                        <button
+                          onClick={() => updateQuantity(item._id, item.orderQuantity - 1)}
+                          className="w-8 h-8 bg-red-500 text-white rounded text-sm hover:bg-red-600 flex items-center justify-center transition-colors duration-200"
+                        >
+                          −
+                        </button>
+                        <span className="text-sm font-bold w-8 text-center bg-white px-2 py-1 rounded border">{item.orderQuantity}</span>
+                        <button
+                          onClick={() => addToOrder(item)}
+                          className="w-8 h-8 bg-green-500 text-white rounded text-sm hover:bg-green-600 flex items-center justify-center transition-colors duration-200"
+                        >
+                          +
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+                
+                <div className="border-t-2 border-gray-200 pt-4">
+                  <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg mb-4">
+                    <div className="flex justify-between items-center">
+                      <span className="text-lg font-semibold text-gray-700">Total Amount:</span>
+                      <span className="text-2xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <motion.button
+                      onClick={() => {
+                        handleSubmitOrder()
+                        setShowCartModal(false)
+                      }}
+                      disabled={selectedProducts.length === 0}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                      whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                      whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                    >
+                      🛍️ Create Order
+                    </motion.button>
+                    <motion.button
+                      onClick={async () => {
+                        if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
+                          toast.error('Please fill customer details and add products to generate quote')
+                          return
+                        }
+                        
+                        if (customerInfo.phone && customerInfo.phone.length !== 10) {
+                          toast.error('Phone number must be exactly 10 digits')
+                          return
+                        }
+                        
+                        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+                        if (!emailRegex.test(customerInfo.email)) {
+                          toast.error('Please enter a valid email address')
+                          return
+                        }
+
+                        const quotationData = {
+                          customerName: customerInfo.name,
+                          customerEmail: customerInfo.email,
+                          customerPhone: customerInfo.phone,
+                          address: customerInfo.address,
+                          type: 'Quotation',
+                          items: selectedProducts.map(item => ({
+                            product: item._id,
+                            quantity: item.orderQuantity,
+                            price: item.sellingRate
+                          })),
+                          totalAmount: getTotalAmount(),
+                          status: 'Pending'
+                        }
+
+                        try {
+                          await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                          toast.success('Quotation generated and saved successfully!')
+                          setShowCartModal(false)
+                          setTimeout(() => {
+                            navigate('/quotation-list')
+                          }, 1500)
+                        } catch (error) {
+                          console.error('Error generating quotation:', error)
+                          toast.error('Failed to generate quotation. Please try again.')
+                        }
+                      }}
+                      disabled={selectedProducts.length === 0}
+                      className="flex-1 px-6 py-3 bg-gradient-to-r from-green-600 to-green-700 text-white font-semibold rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                      whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                      whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                    >
+                      📄 Generate Quote
+                    </motion.button>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
 
       {/* Product Details Modal - Mobile Friendly */}
       {showModal && selectedProduct && (
@@ -673,6 +680,57 @@ const CreateOrder = () => {
                 className="flex-1 px-6 py-4 bg-gray-500 text-white rounded-xl hover:bg-gray-600 font-semibold transition-all duration-200 shadow-lg"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Floating Cart Button */}
+      <button
+        onClick={() => setShowCartModal(true)}
+        className="fixed top-2 right-8 w-12 h-12 bg-gradient-to-r from-green-600 to-green-700 text-white rounded-full hover:from-green-700 hover:to-green-800 shadow-lg transition-all duration-200 flex items-center justify-center z-40"
+      >
+        <span className="text-2xl">🛒</span>
+        {selectedProducts.length > 0 && (
+          <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
+            {selectedProducts.length}
+          </span>
+        )}
+      </button>
+
+      {/* Confirmation Modal */}
+      {showConfirmModal && pendingProduct && (
+        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4 backdrop-blur-md">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Item Already Added</h3>
+            <p className="text-gray-600 mb-6">
+              "{pendingProduct.product.name}" is already in your cart. Do you want to add again?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  const updatedProducts = selectedProducts.map(item =>
+                    item._id === pendingProduct.product._id 
+                      ? { ...item, orderQuantity: item.orderQuantity + pendingProduct.quantity }
+                      : item
+                  )
+                  setSelectedProducts(updatedProducts)
+                  setShowConfirmModal(false)
+                  setPendingProduct(null)
+                }}
+                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
+              >
+                Yes, Add More
+              </button>
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false)
+                  setPendingProduct(null)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
+              >
+                Cancel
               </button>
             </div>
           </div>

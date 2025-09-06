@@ -31,8 +31,14 @@ const Order = () => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
       const ordersData = response.data.orders || response.data.data || []
+      // Filter out quotations, only show actual orders
+      const actualOrders = ordersData.filter(order => 
+        order.type !== 'Quotation' && 
+        order.type !== 'quotation' && 
+        !order.isQuotation
+      )
       // Sort orders by creation date (newest first)
-      const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      const sortedOrders = actualOrders.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       setOrders(sortedOrders)
       setTotalPages(response.data.totalPages || 1)
       setCurrentPage(page)

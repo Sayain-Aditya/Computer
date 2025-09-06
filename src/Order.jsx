@@ -20,14 +20,36 @@ const Order = () => {
     fetchOrders(1)
   }, [])
 
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      fetchOrders(1)
+    }, 500)
+    return () => clearTimeout(delayedSearch)
+  }, [searchTerm])
+
   const fetchOrders = async (page = 1) => {
     try {
-      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
-      const ordersData = response.data.orders || response.data.data || []
-      // Sort orders by creation date (newest first)
-      const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-      setOrders(sortedOrders)
-      setTotalPages(response.data.totalPages || 1)
+      setLoading(true)
+      let url
+      if (searchTerm) {
+        url = `https://computer-shop-ecru.vercel.app/api/customers?search=${encodeURIComponent(searchTerm)}`
+      } else {
+        url = `https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`
+      }
+      
+      const response = await axios.get(url)
+      const data = response.data
+      
+      if (searchTerm) {
+        setOrders(Array.isArray(data) ? data : [])
+        setTotalPages(1)
+      } else {
+        const ordersData = data.orders || data.data || []
+        const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        setOrders(sortedOrders)
+        setTotalPages(data.totalPages || 1)
+      }
+      
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -38,12 +60,7 @@ const Order = () => {
   }
 
   const getFilteredOrders = () => {
-    if (!searchTerm) return orders
-    return orders.filter(order => 
-      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      order._id?.toLowerCase().includes(searchTerm.toLowerCase())
-    )
+    return orders
   }
 
   const handleDeleteOrder = async () => {

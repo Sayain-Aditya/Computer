@@ -38,13 +38,34 @@ const Quotation = () => {
   }
 
   const handleWhatsAppShare = () => {
-    const message = `Computer Shop Quotation for ${orderData.customer.name}\nTotal: ₹${formatIndianNumber(orderData.totalAmount.toFixed(2))}\n\nItems:\n${orderData.products.map(item => `• ${item.name} - Qty: ${item.orderQuantity} - ₹${formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}`).join('\n')}\n\nTo get the PDF version, please use the Print button and save as PDF.\n\nThank you for your business!`
+    // Create shareable PDF link with encoded data
+    const quotationData = {
+      customer: orderData.customer,
+      products: orderData.products,
+      totalAmount: orderData.totalAmount,
+      createdAt: new Date().toISOString()
+    }
+    
+    const encodedData = btoa(JSON.stringify(quotationData))
+    const pdfLink = `${window.location.origin}/quotation-pdf/shared?data=${encodedData}`
+    
+    const message = `Computer Shop Quotation\n\nCustomer: ${orderData.customer.name}\nTotal: ₹${formatIndianNumber(orderData.totalAmount.toFixed(2))}\n\nItems:\n${orderData.products.map(item => `• ${item.name} - Qty: ${item.orderQuantity} - ₹${formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}`).join('\n')}\n\nView & Download PDF: ${pdfLink}\n\nThank you for your business!`
     
     const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-    window.open(whatsappUrl, '_blank')
     
-    // Show instruction to user
-    toast.info('WhatsApp opened with quotation details. To share PDF: 1. Use the Print button 2. Select "Save as PDF" 3. Save the PDF 4. Attach it to your WhatsApp message')
+    // Copy PDF link to clipboard
+    navigator.clipboard.writeText(pdfLink).then(() => {
+      toast.success('PDF link copied to clipboard!')
+    }).catch(() => {
+      toast.info('PDF link created successfully!')
+    })
+    
+    // Open WhatsApp
+    setTimeout(() => {
+      window.open(whatsappUrl, '_blank')
+    }, 500)
+    
+    toast.success('PDF link created and ready to share!')
   }
 
   return (

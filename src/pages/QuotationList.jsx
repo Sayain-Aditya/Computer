@@ -4,31 +4,66 @@ import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
 
+
 const QuotationList = () => {
   const navigate = useNavigate()
   const [quotations, setQuotations] = useState([])
   const [loading, setLoading] = useState(true)
   const [showConvertModal, setShowConvertModal] = useState(false)
   const [quotationToConvert, setQuotationToConvert] = useState(null)
+  const [searchTerm, setSearchTerm] = useState('')
+
 
   useEffect(() => {
     fetchQuotations()
   }, [])
 
-  const fetchQuotations = async () => {
+  const fetchQuotations = async (search = '') => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
+      const url = search 
+        ? `https://computer-shop-ecru.vercel.app/api/orders/get?search=${encodeURIComponent(search)}`
+        : 'https://computer-shop-ecru.vercel.app/api/orders/get'
+      
+      console.log('API URL:', url)
+      const response = await axios.get(url)
+      console.log('API Response:', response.data)
+      
       // Filter only quotations (type: 'Quotation')
-      const quotationData = response.data.data?.filter(order => order.type === 'Quotation') || []
+      let quotationData = response.data.data?.filter(order => order.type === 'Quotation') || []
+      
+      // If search returns empty but we have a search term, try without search
+      if (quotationData.length === 0 && search) {
+        console.log('Search returned empty, trying without search...')
+        const fallbackResponse = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
+        const allData = fallbackResponse.data.data?.filter(order => order.type === 'Quotation') || []
+        
+        // Client-side search as fallback
+        quotationData = allData.filter(quotation => 
+          quotation.customerName?.toLowerCase().includes(search.toLowerCase()) ||
+          quotation.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
+          quotation._id?.toLowerCase().includes(search.toLowerCase()) ||
+          quotation._id?.slice(-6).toLowerCase().includes(search.toLowerCase())
+        )
+      }
+      
+      console.log('Final quotations:', quotationData)
+      
       // Sort quotations by creation date (newest first)
       const sortedQuotations = quotationData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
       setQuotations(sortedQuotations)
     } catch (error) {
       console.error('Error fetching quotations:', error)
+      console.error('Error details:', error.response?.data)
       setQuotations([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const handleSearch = (e) => {
+    const value = e.target.value
+    setSearchTerm(value)
+    fetchQuotations(value)
   }
 
   const handleDeleteQuotation = async (quotationId) => {
@@ -73,6 +108,33 @@ const QuotationList = () => {
     } catch (error) {
       console.error('Error updating status:', error)
       toast.error('Failed to update status. Please try again.')
+    }
+  }
+
+  const shareOnWhatsApp = (orderData) => {
+    try {
+      let message = `🏪 *Computer Shop Quotation*\n\n`
+      message += `👤 *Customer:* ${orderData.customer.name}\n`
+      message += `📧 *Email:* ${orderData.customer.email}\n`
+      message += `📱 *Phone:* ${orderData.customer.phone}\n\n`
+      message += `📋 *Items:*\n`
+      
+      orderData.products.forEach((item, index) => {
+        message += `${index + 1}. ${item.name}\n`
+        message += `   Qty: ${item.orderQuantity} | Rate: ₹${item.sellingRate}\n`
+      })
+      
+      message += `\n💰 *Total Amount: ₹${orderData.totalAmount.toFixed(2)}*\n\n`
+      message += `📅 Date: ${new Date().toLocaleDateString()}\n`
+      message += `🙏 Thank you for your business!`
+      
+      const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+      window.open(whatsappUrl, '_blank')
+      
+      toast.success('WhatsApp opened with quotation details!')
+    } catch (error) {
+      console.error('Error sharing on WhatsApp:', error)
+      toast.error('Failed to share on WhatsApp. Please try again.')
     }
   }
 
@@ -131,8 +193,18 @@ const QuotationList = () => {
           </div>
         </div>
         
-        <div className="mt-6 flex justify-between items-center">
-          <div className="text-sm text-gray-500">
+        <div className="mt-6 flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
+          <input
+            type="text"
+            placeholder="Search quotations by customer name, email, or quote ID..."
+            value={searchTerm}
+            onChange={(e) => {
+              setSearchTerm(e.target.value)
+              fetchQuotations(e.target.value)
+            }}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-lg focus:outline-none focus:border-gray-400 shadow-sm w-full lg:w-96"
+          />
+          <div className="text-sm text-gray-500 w-full lg:w-auto text-left lg:text-right">
             {quotations.length} quotations found
           </div>
         </div>
@@ -225,28 +297,31 @@ const QuotationList = () => {
                       }
                     }) || []
                     
-                    navigate('/quotation', {
-                      state: {
-                        orderData: {
-                          customer: {
-                            name: quotation.customerName,
-                            email: quotation.customerEmail,
-                            phone: quotation.customerPhone,
-                            address: quotation.address || 'Address not provided'
-                          },
-                          products: productsWithNames,
-                          totalAmount: quotation.totalAmount || 0
-                        }
+                    // Create short shareable PDF link
+                    const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
+                    
+                    // Open PDF in new tab
+                    window.open(shareableUrl, '_blank')
+                    
+                    // Copy link and show WhatsApp option
+                    navigator.clipboard.writeText(shareableUrl)
+                    
+                    const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                    
+                    setTimeout(() => {
+                      if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                        window.open(whatsappUrl, '_blank')
                       }
-                    })
+                    }, 1000)
                   } catch (error) {
                     console.error('Error fetching products:', error)
                     toast.error('Failed to load product details. Please try again.')
                   }
                 }}
-                className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
+                className="px-3 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200"
               >
-                View
+                View PDF
               </button>
               <button 
                 onClick={() => handleDeleteQuotation(quotation._id)}
@@ -365,28 +440,31 @@ const QuotationList = () => {
                               }
                             }) || []
                             
-                            navigate('/quotation', {
-                              state: {
-                                orderData: {
-                                  customer: {
-                                    name: quotation.customerName,
-                                    email: quotation.customerEmail,
-                                    phone: quotation.customerPhone,
-                                    address: quotation.address || 'Address not provided'
-                                  },
-                                  products: productsWithNames,
-                                  totalAmount: quotation.totalAmount || 0
-                                }
+                            // Create short shareable PDF link
+                            const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
+                            
+                            // Open PDF in new tab
+                            window.open(shareableUrl, '_blank')
+                            
+                            // Copy link and show WhatsApp option
+                            navigator.clipboard.writeText(shareableUrl)
+                            
+                            const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                            
+                            setTimeout(() => {
+                              if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                                window.open(whatsappUrl, '_blank')
                               }
-                            })
+                            }, 1000)
                           } catch (error) {
-                            console.error('Error fetching products:', error)
-                            toast.error('Failed to load product details. Please try again.')
+                            console.error('Error:', error)
+                            toast.error('Failed to create PDF link. Please try again.')
                           }
                         }}
-                        className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200"
+                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200"
                       >
-                        View
+                        View PDF
                       </button>
                       <button 
                         onClick={() => handleDeleteQuotation(quotation._id)}

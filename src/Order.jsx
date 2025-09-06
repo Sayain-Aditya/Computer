@@ -29,27 +29,12 @@ const Order = () => {
 
   const fetchOrders = async (page = 1) => {
     try {
-      setLoading(true)
-      let url
-      if (searchTerm) {
-        url = `https://computer-shop-ecru.vercel.app/api/customers?search=${encodeURIComponent(searchTerm)}`
-      } else {
-        url = `https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`
-      }
-      
-      const response = await axios.get(url)
-      const data = response.data
-      
-      if (searchTerm) {
-        setOrders(Array.isArray(data) ? data : [])
-        setTotalPages(1)
-      } else {
-        const ordersData = data.orders || data.data || []
-        const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
-        setOrders(sortedOrders)
-        setTotalPages(data.totalPages || 1)
-      }
-      
+      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
+      const ordersData = response.data.orders || response.data.data || []
+      // Sort orders by creation date (newest first)
+      const sortedOrders = ordersData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+      setOrders(sortedOrders)
+      setTotalPages(response.data.totalPages || 1)
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching orders:', error)
@@ -399,20 +384,23 @@ const Order = () => {
                       }
                     }) || []
                     
-                    navigate('/quotation', {
-                      state: {
-                        orderData: {
-                          customer: {
-                            name: order.customerName,
-                            email: order.customerEmail,
-                            phone: order.customerPhone,
-                            address: order.address || 'Address not provided'
-                          },
-                          products: productsWithNames,
-                          totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
-                        }
+                    // Create short shareable PDF link
+                    const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                    
+                    // Open PDF in new tab
+                    window.open(shareableUrl, '_blank')
+                    
+                    // Copy link and show WhatsApp option
+                    navigator.clipboard.writeText(shareableUrl)
+                    
+                    const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0)?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                    
+                    setTimeout(() => {
+                      if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                        window.open(whatsappUrl, '_blank')
                       }
-                    })
+                    }, 1000)
                   } catch (error) {
                     console.error('Error fetching products:', error)
                     toast.error('Failed to load product details. Please try again.')
@@ -536,20 +524,23 @@ const Order = () => {
                               }
                             }) || []
                             
-                            navigate('/quotation', {
-                              state: {
-                                orderData: {
-                                  customer: {
-                                    name: order.customerName,
-                                    email: order.customerEmail,
-                                    phone: order.customerPhone,
-                                    address: order.address || 'Address not provided'
-                                  },
-                                  products: productsWithNames,
-                                  totalAmount: order.items?.reduce((total, item) => total + (item.price * item.quantity), 0) || 0
-                                }
+                            // Create short shareable PDF link
+                            const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                            
+                            // Open PDF in new tab
+                            window.open(shareableUrl, '_blank')
+                            
+                            // Copy link and show WhatsApp option
+                            navigator.clipboard.writeText(shareableUrl)
+                            
+                            const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.items?.reduce((total, item) => total + (item.price * item.quantity), 0)?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                            
+                            setTimeout(() => {
+                              if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                                window.open(whatsappUrl, '_blank')
                               }
-                            })
+                            }, 1000)
                           } catch (error) {
                             console.error('Error fetching products:', error)
                             toast.error('Failed to load product details. Please try again.')

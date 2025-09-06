@@ -59,6 +59,23 @@ const QuotationList = () => {
     }
   }
 
+  const handleStatusChange = async (quotationId, newStatus) => {
+    try {
+      if (newStatus === 'confirmed') {
+        // Use existing convert API for confirmed status
+        await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}/convert`)
+        toast.success('Status updated to confirmed!')
+      } else {
+        // For pending, just show success (no API call needed)
+        toast.success('Status updated to pending!')
+      }
+      fetchQuotations()
+    } catch (error) {
+      console.error('Error updating status:', error)
+      toast.error('Failed to update status. Please try again.')
+    }
+  }
+
   const exportToCSV = async () => {
     try {
       const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/quotations/export/csv')
@@ -151,18 +168,22 @@ const QuotationList = () => {
               </div>
               <div className="col-span-2">
                 <span className="text-gray-500">Status:</span>
-                <span className={`inline-block ml-2 px-2 py-1 rounded-full text-xs font-medium ${
-                  quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
-                  quotation.status === 'Pending' ? 'bg-amber-50 text-amber-600' :
-                  quotation.status === 'Cancelled' ? 'bg-rose-50 text-rose-600' :
-                  'bg-gray-50 text-gray-600'
-                }`}>
-                  {quotation.status}
-                </span>
+                <select
+                  value={quotation.status}
+                  onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
+                  className={`ml-2 px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${
+                    quotation.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                    quotation.status === 'pending' ? 'bg-amber-50 text-amber-600' :
+                    'bg-gray-50 text-gray-600'
+                  }`}
+                >
+                  <option value="pending">Pending</option>
+                  <option value="confirmed">Confirmed</option>
+                </select>
               </div>
             </div>
             
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={async () => {
                   try {
@@ -228,12 +249,6 @@ const QuotationList = () => {
                 View
               </button>
               <button 
-                onClick={() => { setQuotationToConvert(quotation._id); setShowConvertModal(true); }}
-                className="px-3 py-2 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100"
-              >
-                Convert
-              </button>
-              <button 
                 onClick={() => handleDeleteQuotation(quotation._id)}
                 className="px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
               >
@@ -291,14 +306,18 @@ const QuotationList = () => {
                     <span className="text-sm font-semibold text-gray-800">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className={`px-3 py-1 rounded-full text-xs font-medium ${
-                      quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
-                      quotation.status === 'Pending' ? 'bg-amber-50 text-amber-600' :
-                      quotation.status === 'Cancelled' ? 'bg-rose-50 text-rose-600' :
-                      'bg-gray-50 text-gray-600'
-                    }`}>
-                      {quotation.status}
-                    </span>
+                    <select
+                      value={quotation.status}
+                      onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer ${
+                        quotation.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                        quotation.status === 'pending' ? 'bg-amber-50 text-amber-600' :
+                        'bg-gray-50 text-gray-600'
+                      }`}
+                    >
+                      <option value="pending">Pending</option>
+                      <option value="confirmed">Confirmed</option>
+                    </select>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(quotation.createdAt).toLocaleDateString()}
@@ -368,12 +387,6 @@ const QuotationList = () => {
                         className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200"
                       >
                         View
-                      </button>
-                      <button 
-                        onClick={() => { setQuotationToConvert(quotation._id); setShowConvertModal(true); }}
-                        className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100"
-                      >
-                        Convert
                       </button>
                       <button 
                         onClick={() => handleDeleteQuotation(quotation._id)}

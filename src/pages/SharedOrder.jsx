@@ -9,9 +9,12 @@ const SharedOrder = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   
-  // Check if WhatsApp should be shown (for internal use)
+ 
+   // Check if WhatsApp should be shown (for internal use)
   const urlParams = new URLSearchParams(window.location.search)
   const showWhatsApp = urlParams.get('internal') === 'true'
+
+
 
   // Indian number formatting function
   const formatIndianNumber = (num) => {
@@ -136,7 +139,7 @@ const SharedOrder = () => {
     <div className="min-h-screen bg-white">
       {/* Conditional Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
-        {showWhatsApp && (
+        {!hideWhatsApp && (
           <button 
             onClick={() => {
               const cleanUrl = `${window.location.origin}/shared-order/${id}`

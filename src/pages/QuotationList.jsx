@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { formatIndianCurrency, formatIndianNumber } from '../utils/formatters'
 
 
 const QuotationList = () => {
@@ -121,10 +122,10 @@ const QuotationList = () => {
       
       orderData.products.forEach((item, index) => {
         message += `${index + 1}. ${item.name}\n`
-        message += `   Qty: ${item.orderQuantity} | Rate: ₹${item.sellingRate}\n`
+        message += `   Qty: ${item.orderQuantity} | Rate: ${formatIndianCurrency(item.sellingRate)}\n`
       })
       
-      message += `\n💰 *Total Amount: ₹${orderData.totalAmount.toFixed(2)}*\n\n`
+      message += `\n💰 *Total Amount: ${formatIndianCurrency(orderData.totalAmount)}*\n\n`
       message += `📅 Date: ${new Date().toLocaleDateString()}\n`
       message += `🙏 Thank you for your business!`
       
@@ -213,20 +214,17 @@ const QuotationList = () => {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {quotations.map((quotation, index) => (
-          <motion.div
+          <div
             key={quotation._id}
             className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">#QT-{quotation._id?.slice(-6) || 'N/A'}</h3>
+                <h3 className="font-medium text-gray-900">{quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}</h3>
                 <p className="text-sm text-gray-600">{quotation.customerName}</p>
                 <p className="text-xs text-gray-500">{quotation.customerEmail}</p>
               </div>
-              <span className="text-lg font-bold text-gray-900">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+              <span className="text-lg font-bold text-gray-900">{formatIndianCurrency(quotation.totalAmount || 0)}</span>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
@@ -330,17 +328,12 @@ const QuotationList = () => {
                 Delete
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Desktop Table View */}
-      <motion.div 
-        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50">
@@ -356,15 +349,12 @@ const QuotationList = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {quotations.map((quotation, index) => (
-                <motion.tr 
+                <tr 
                   key={quotation._id}
                   className="hover:bg-gray-50"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
                 >
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-800">#QT-{quotation._id?.slice(-6) || 'N/A'}</div>
+                    <div className="text-sm font-medium text-gray-800">{quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div>
@@ -378,7 +368,7 @@ const QuotationList = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(quotation.totalAmount || 0)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <select
@@ -474,7 +464,7 @@ const QuotationList = () => {
                       </button>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -493,7 +483,7 @@ const QuotationList = () => {
             </button>
           </div>
         )}
-      </motion.div>
+      </div>
 
       {/* Convert Confirmation Modal */}
       {showConvertModal && (

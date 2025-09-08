@@ -164,8 +164,19 @@ const CreateOrder = () => {
   }
 
   const handleSubmitOrder = async () => {
-    if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-      toast.error('Please fill customer details and add products to order')
+    // Validation
+    if (!customerInfo.name?.trim()) {
+      toast.error('Customer name is required')
+      return
+    }
+    
+    if (!customerInfo.email?.trim()) {
+      toast.error('Customer email is required')
+      return
+    }
+    
+    if (selectedProducts.length === 0) {
+      toast.error('Please add at least one product to the order')
       return
     }
     
@@ -180,21 +191,34 @@ const CreateOrder = () => {
       return
     }
 
+    // Validate products have valid data
+    const invalidProducts = selectedProducts.filter(item => 
+      !item._id || !item.orderQuantity || item.orderQuantity <= 0 || !item.sellingRate
+    )
+    
+    if (invalidProducts.length > 0) {
+      toast.error('Some products have invalid data. Please check quantities and prices.')
+      return
+    }
+
     const orderData = {
-      customerName: customerInfo.name,
-      customerEmail: customerInfo.email,
-      customerPhone: customerInfo.phone,
-      address: customerInfo.address,
+      customerName: customerInfo.name.trim(),
+      customerEmail: customerInfo.email.trim(),
+      customerPhone: customerInfo.phone || '',
+      address: customerInfo.address?.trim() || '',
       items: selectedProducts.map(item => ({
         product: item._id,
-        quantity: item.orderQuantity,
-        price: item.sellingRate
+        quantity: parseInt(item.orderQuantity),
+        price: parseFloat(item.sellingRate)
       })),
-      totalAmount: getTotalAmount()
+      totalAmount: parseFloat(getTotalAmount().toFixed(2))
+      // Let backend generate orderId automatically
     }
 
     try {
-      await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
+      console.log('Creating order with data:', orderData)
+      const response = await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
+      console.log('Order created successfully:', response.data)
       
       // Update stock for each product in the order
       for (const item of selectedProducts) {
@@ -202,27 +226,45 @@ const CreateOrder = () => {
           console.log(`Updating stock for product ${item._id}, reducing by ${item.orderQuantity}`)
           // Try both API endpoints to see which one works
           try {
-            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
+            const stockResponse = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
               quantity: item.orderQuantity
             })
-            console.log(`Stock update response (update-stock):`, response.data)
+            console.log(`Stock update response (update-stock):`, stockResponse.data)
           } catch (err1) {
             console.log('update-stock failed, trying update endpoint')
-            const response = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
+            const stockResponse = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
               quantity: item.quantity - item.orderQuantity
             })
-            console.log(`Stock update response (update):`, response.data)
+            console.log(`Stock update response (update):`, stockResponse.data)
           }
         } catch (stockError) {
           console.error(`Error updating stock for product ${item._id}:`, stockError)
+          // Don't fail the entire order if stock update fails
         }
       }
       
-      toast.success('Order created successfully!')
-      navigate('/orders')
+      toast.success('✅ Order created successfully!')
+      // Clear form
+      setSelectedProducts([])
+      setCustomerInfo({ name: '', email: '', phone: '', address: '' })
+      // Navigate after a short delay
+      setTimeout(() => {
+        navigate('/orders')
+      }, 1500)
     } catch (error) {
       console.error('Error creating order:', error)
-      toast.error('Failed to create order. Please try again.')
+      console.error('Error details:', error.response?.data)
+      
+      // More specific error messages
+      if (error.response?.status === 400) {
+        toast.error(`Invalid order data: ${error.response.data.message || 'Please check all fields'}`)
+      } else if (error.response?.status === 500) {
+        toast.error('Server error. Please try again later.')
+      } else if (error.code === 'NETWORK_ERROR') {
+        toast.error('Network error. Please check your connection.')
+      } else {
+        toast.error(`Failed to create order: ${error.response?.data?.message || error.message || 'Please try again.'}`)
+      }
     }
   }
 
@@ -560,8 +602,19 @@ const CreateOrder = () => {
                     </motion.button>
                     <motion.button
                       onClick={async () => {
-                        if (!customerInfo.name || !customerInfo.email || selectedProducts.length === 0) {
-                          toast.error('Please fill customer details and add products to generate quote')
+                        // Validation for quotation
+                        if (!customerInfo.name?.trim()) {
+                          toast.error('Customer name is required for quotation')
+                          return
+                        }
+                        
+                        if (!customerInfo.email?.trim()) {
+                          toast.error('Customer email is required for quotation')
+                          return
+                        }
+                        
+                        if (selectedProducts.length === 0) {
+                          toast.error('Please add at least one product to generate quotation')
                           return
                         }
                         
@@ -577,30 +630,49 @@ const CreateOrder = () => {
                         }
 
                         const quotationData = {
-                          customerName: customerInfo.name,
-                          customerEmail: customerInfo.email,
-                          customerPhone: customerInfo.phone,
-                          address: customerInfo.address,
+                          customerName: customerInfo.name.trim(),
+                          customerEmail: customerInfo.email.trim(),
+                          customerPhone: customerInfo.phone || '',
+                          address: customerInfo.address?.trim() || '',
                           type: 'Quotation',
                           items: selectedProducts.map(item => ({
                             product: item._id,
-                            quantity: item.orderQuantity,
-                            price: item.sellingRate
+                            quantity: parseInt(item.orderQuantity),
+                            price: parseFloat(item.sellingRate)
                           })),
-                          totalAmount: getTotalAmount(),
-                          status: 'Pending'
+                          totalAmount: parseFloat(getTotalAmount().toFixed(2)),
+                          status: 'pending'
+                          // Let backend generate quoteId automatically
                         }
 
                         try {
-                          await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                          toast.success('Quotation generated and saved successfully!')
+                          console.log('Creating quotation with data:', quotationData)
+                          const response = await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                          console.log('Quotation created successfully:', response.data)
+                          
+                          toast.success('✅ Quotation generated and saved successfully!')
                           setShowCartModal(false)
+                          // Clear form
+                          setSelectedProducts([])
+                          setCustomerInfo({ name: '', email: '', phone: '', address: '' })
+                          
                           setTimeout(() => {
                             navigate('/quotation-list')
                           }, 1500)
                         } catch (error) {
                           console.error('Error generating quotation:', error)
-                          toast.error('Failed to generate quotation. Please try again.')
+                          console.error('Error details:', error.response?.data)
+                          
+                          // More specific error messages
+                          if (error.response?.status === 400) {
+                            toast.error(`Invalid quotation data: ${error.response.data.message || 'Please check all fields'}`)
+                          } else if (error.response?.status === 500) {
+                            toast.error('Server error. Please try again later.')
+                          } else if (error.code === 'NETWORK_ERROR') {
+                            toast.error('Network error. Please check your connection.')
+                          } else {
+                            toast.error(`Failed to generate quotation: ${error.response?.data?.message || error.message || 'Please try again.'}`)
+                          }
                         }
                       }}
                       disabled={selectedProducts.length === 0}

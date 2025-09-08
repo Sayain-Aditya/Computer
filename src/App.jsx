@@ -15,14 +15,15 @@ import Quotation from "./pages/Quotation";
 import QuotationList from "./pages/QuotationList";
 import SharedQuotation from "./pages/SharedQuotation";
 import SharedOrder from "./pages/SharedOrder";
-import CleanSharedQuotation from "./pages/CleanSharedQuotation";
+
+import OrderPDF from "./pages/OrderPDF";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
   const location = useLocation()
   
   // Check if current route is a shared PDF route
-  const isSharedRoute = location.pathname.startsWith('/shared-quotation') || location.pathname.startsWith('/shared-order') || location.pathname.startsWith('/clean-quotation')
+  const isSharedRoute = location.pathname.startsWith('/shared-quotation') || location.pathname.startsWith('/shared-order')
   
   // If it's a shared route, render only the content without sidebar
   if (isSharedRoute) {
@@ -31,7 +32,6 @@ function AppContent() {
         <Routes>
           <Route path="/shared-quotation/:id" element={<SharedQuotation />} />
           <Route path="/shared-order/:id" element={<SharedOrder />} />
-          <Route path="/clean-quotation/:id" element={<CleanSharedQuotation />} />
         </Routes>
       </div>
     )
@@ -68,6 +68,7 @@ function AppContent() {
           <Route path="/edit-order/:id" element={<div className="p-2 sm:p-4 lg:p-6"><EditOrder /></div>} />
           <Route path="/quotation" element={<div className="p-2 sm:p-4 lg:p-6"><Quotation /></div>} />
           <Route path="/quotation-list" element={<div className="p-2 sm:p-4 lg:p-6"><QuotationList /></div>} />
+          <Route path="/order-pdf/:id" element={<div className="p-2 sm:p-4 lg:p-6"><OrderPDF /></div>} />
         </Routes>
       </div>
     </div>

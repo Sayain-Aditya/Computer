@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { formatIndianCurrency } from './utils/formatters'
 
 const Order = () => {
   const navigate = useNavigate()
@@ -31,6 +32,7 @@ const Order = () => {
     try {
       const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
       const ordersData = response.data.orders || response.data.data || []
+      console.log('Orders data:', ordersData) // Debug log
       // Filter out quotations - only show actual orders
       const actualOrders = ordersData.filter(order => order.type !== 'Quotation')
       // Sort orders by creation date (newest first)
@@ -198,7 +200,7 @@ const Order = () => {
               <h3 style="text-align: right;">Order Details:</h3>
               <div class="order-info">
                 <p><span>Date:</span> ${new Date().toLocaleDateString()}</p>
-                <p><span>Order #:</span> OR-${order._id?.slice(-6)}</p>
+                <p><span>Order #:</span> ${order.orderId || `#${order._id?.slice(-6)}`}</p>
                 <p><span>Status:</span> Confirmed</p>
               </div>
             </div>
@@ -257,8 +259,6 @@ const Order = () => {
       if (printWindow) {
         printWindow.document.write(printContent)
         printWindow.document.close()
-        printWindow.print()
-        setTimeout(() => printWindow.close(), 1000)
       }
     } catch (error) {
       console.error('Print error:', error)
@@ -317,20 +317,17 @@ const Order = () => {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {getFilteredOrders().map((order, index) => (
-          <motion.div
+          <div
             key={order._id}
             className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">#{order._id?.slice(-6) || 'N/A'}</h3>
+                <h3 className="font-medium text-gray-900">{order.orderId || `#${order._id?.slice(-6)}`}</h3>
                 <p className="text-sm text-gray-600">{order.customerName}</p>
                 <p className="text-xs text-gray-500">{order.customerEmail}</p>
               </div>
-              <span className="text-lg font-bold text-gray-900">₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
+              <span className="text-lg font-bold text-gray-900">{formatIndianCurrency(order.totalAmount || 0)}</span>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
@@ -346,79 +343,27 @@ const Order = () => {
             
             <div className="grid grid-cols-2 gap-2">
               <button 
-                onClick={async () => {
-                  try {
-                    const [productsResponse, categoriesResponse] = await Promise.all([
-                      axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-                      axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-                    ])
-                    const allProducts = productsResponse.data
-                    const allCategories = categoriesResponse.data
-                    
-                    const productsWithNames = order.items?.map(item => {
-                      let productName = 'Unknown Product'
-                      let categoryName = 'N/A'
-                      
-                      if (typeof item.product === 'object' && item.product?.name) {
-                        productName = item.product.name
-                        if (item.product.category?.name) {
-                          categoryName = item.product.category.name
-                        } else if (item.product.category) {
-                          const category = allCategories.find(c => c._id === item.product.category)
-                          categoryName = category?.name || 'N/A'
-                        }
-                      } else if (typeof item.product === 'string') {
-                        const product = allProducts.find(p => p._id === item.product)
-                        productName = product?.name || `Product ${item.product}`
-                        if (product?.category?.name) {
-                          categoryName = product.category.name
-                        } else if (product?.category) {
-                          const category = allCategories.find(c => c._id === product.category)
-                          categoryName = category?.name || 'N/A'
-                        }
-                      }
-                      
-                      return {
-                        name: productName,
-                        orderQuantity: item.quantity,
-                        sellingRate: item.price,
-                        category: { name: categoryName }
-                      }
-                    }) || []
-                    
-                    // Create PDF link with internal parameter to show WhatsApp
-                    const internalUrl = `${window.location.origin}/shared-order/${order._id}?internal=true`
-                    const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
-                    
-                    // Open PDF in new tab with WhatsApp button
-                    window.open(internalUrl, '_blank')
-                    
-                    // Copy clean link for customer sharing
-                    navigator.clipboard.writeText(shareableUrl)
-                    
-                    const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
-                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                    
-                    
-                    setTimeout(() => {
-                      if (confirm('PDF link copied! Open WhatsApp to share?')) {
-                        window.open(whatsappUrl, '_blank')
-                      }
-                    }, 1000)
-                  } catch (error) {
-                    console.error('Error fetching products:', error)
-                    toast.error('Failed to load product details. Please try again.')
-                  }
-                }}
+                onClick={() => navigate(`/order-pdf/${order._id}`)}
                 className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
               >
                 View PDF
               </button>
               <button 
-                onClick={() => handlePrintOrder(order)}
-                className="px-3 py-2 bg-emerald-50 text-emerald-600 text-sm font-medium rounded-lg hover:bg-emerald-100"
+                onClick={() => {
+                  const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                  navigator.clipboard.writeText(shareableUrl)
+                  const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                  
+                  setTimeout(() => {
+                    if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                      window.open(whatsappUrl, '_blank')
+                    }
+                  }, 500)
+                }}
+                className="px-3 py-2 bg-blue-50 text-blue-600 text-sm font-medium rounded-lg hover:bg-blue-100"
               >
-                Print
+                Share
               </button>
               <button 
                 onClick={() => navigate(`/edit-order/${order._id}`)}
@@ -433,17 +378,12 @@ const Order = () => {
                 Delete
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Desktop Table View */}
-      <motion.div 
-        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50">
@@ -458,15 +398,12 @@ const Order = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {getFilteredOrders().map((order, index) => (
-                <motion.tr 
+                <tr 
                   key={order._id}
                   className="hover:bg-gray-50"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
                 >
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-800">#{order._id?.slice(-6) || 'N/A'}</div>
+                    <div className="text-sm font-medium text-gray-800">{order.orderId || `#${order._id?.slice(-6)}`}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div>
@@ -480,7 +417,7 @@ const Order = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">₹{order.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(order.totalAmount || 0)}</span>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(order.createdAt).toLocaleDateString()}
@@ -488,78 +425,27 @@ const Order = () => {
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button 
-                        onClick={async () => {
-                          try {
-                            const [productsResponse, categoriesResponse] = await Promise.all([
-                              axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-                              axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-                            ])
-                            const allProducts = productsResponse.data
-                            const allCategories = categoriesResponse.data
-                            
-                            const productsWithNames = order.items?.map(item => {
-                              let productName = 'Unknown Product'
-                              let categoryName = 'N/A'
-                              
-                              if (typeof item.product === 'object' && item.product?.name) {
-                                productName = item.product.name
-                                if (item.product.category?.name) {
-                                  categoryName = item.product.category.name
-                                } else if (item.product.category) {
-                                  const category = allCategories.find(c => c._id === item.product.category)
-                                  categoryName = category?.name || 'N/A'
-                                }
-                              } else if (typeof item.product === 'string') {
-                                const product = allProducts.find(p => p._id === item.product)
-                                productName = product?.name || `Product ${item.product}`
-                                if (product?.category?.name) {
-                                  categoryName = product.category.name
-                                } else if (product?.category) {
-                                  const category = allCategories.find(c => c._id === product.category)
-                                  categoryName = category?.name || 'N/A'
-                                }
-                              }
-                              
-                              return {
-                                name: productName,
-                                orderQuantity: item.quantity,
-                                sellingRate: item.price,
-                                category: { name: categoryName }
-                              }
-                            }) || []
-                            
-                            // Create PDF link with internal parameter to show WhatsApp
-                            const internalUrl = `${window.location.origin}/shared-order/${order._id}?internal=true`
-                            const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
-                            
-                            // Open PDF in new tab with WhatsApp button
-                            window.open(internalUrl, '_blank')
-                            
-                            // Copy clean link for customer sharing
-                            navigator.clipboard.writeText(shareableUrl)
-                            
-                            const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
-                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                            
-                            setTimeout(() => {
-                              if (confirm('PDF link copied! Open WhatsApp to share?')) {
-                                window.open(whatsappUrl, '_blank')
-                              }
-                            }, 1000)
-                          } catch (error) {
-                            console.error('Error fetching products:', error)
-                            toast.error('Failed to load product details. Please try again.')
-                          }
-                        }}
+                        onClick={() => navigate(`/order-pdf/${order._id}`)}
                         className="px-3 py-1 bg-gray-100 text-gray-700 text-xs font-medium rounded-lg hover:bg-gray-200"
                       >
                         View PDF
                       </button>
                       <button 
-                        onClick={() => handlePrintOrder(order)}
-                        className="px-3 py-1 bg-emerald-50 text-emerald-600 text-xs font-medium rounded-lg hover:bg-emerald-100"
+                        onClick={() => {
+                          const shareableUrl = `${window.location.origin}/shared-order/${order._id}`
+                          navigator.clipboard.writeText(shareableUrl)
+                          const message = `Computer Shop Order\n\nCustomer: ${order.customerName}\nTotal: ₹${order.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                          
+                          setTimeout(() => {
+                            if (confirm('PDF link copied! Open WhatsApp to share?')) {
+                              window.open(whatsappUrl, '_blank')
+                            }
+                          }, 500)
+                        }}
+                        className="px-3 py-1 bg-blue-50 text-blue-600 text-xs font-medium rounded-lg hover:bg-blue-100"
                       >
-                        Print
+                        Share
                       </button>
                       <button 
                         onClick={() => navigate(`/edit-order/${order._id}`)}
@@ -575,7 +461,7 @@ const Order = () => {
                       </button>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -594,7 +480,7 @@ const Order = () => {
             </button>
           </div>
         )}
-      </motion.div>
+      </div>
       
       {/* Pagination */}
       <div className="flex flex-wrap justify-center items-center mt-6 gap-2">

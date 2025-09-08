@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import axios from 'axios'
+import { formatIndianNumber, formatIndianCurrency } from '../utils/formatters'
 
 const SharedOrder = () => {
   const { id } = useParams()
@@ -16,10 +17,7 @@ const SharedOrder = () => {
 
 
 
-  // Indian number formatting function
-  const formatIndianNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(num)
-  }
+
 
   useEffect(() => {
     // Validate ID format
@@ -79,7 +77,8 @@ const SharedOrder = () => {
           },
           products: productsWithNames,
           totalAmount: order.totalAmount || 0,
-          createdAt: order.createdAt
+          createdAt: order.createdAt,
+          orderId: order.orderId || `OR-${order._id?.slice(-6)}`
         })
       } catch (error) {
         console.error('Error fetching order:', error)
@@ -139,11 +138,11 @@ const SharedOrder = () => {
     <div className="min-h-screen bg-white">
       {/* Conditional Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
-        {!hideWhatsApp && (
+        {showWhatsApp && (
           <button 
             onClick={() => {
               const cleanUrl = `${window.location.origin}/shared-order/${id}`
-              const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ₹${orderData.totalAmount?.toFixed(2)}\n\nView PDF: ${cleanUrl}`
+              const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ${formatIndianCurrency(orderData.totalAmount)}\n\nView PDF: ${cleanUrl}`
               const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
               window.open(whatsappUrl, '_blank')
             }}
@@ -181,7 +180,7 @@ const SharedOrder = () => {
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Order Details:</h3>
             <div className="text-gray-700 space-y-1 text-sm sm:text-base">
               <p><span className="font-medium">Date:</span> {new Date(orderData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Order #:</span> OR-{Date.now().toString().slice(-6)}</p>
+              <p><span className="font-medium">Order #:</span> {orderData.orderId}</p>
             </div>
           </div>
         </div>

@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import axios from 'axios'
+import { formatIndianNumber, formatIndianCurrency } from '../utils/formatters'
 
 const SharedQuotation = () => {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const isClean = searchParams.get('clean') === 'true'
   const [quotationData, setQuotationData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Indian number formatting function
-  const formatIndianNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(num)
-  }
+
 
   useEffect(() => {
     // Validate ID format
@@ -72,7 +72,8 @@ const SharedQuotation = () => {
           },
           products: productsWithNames,
           totalAmount: quotation.totalAmount || 0,
-          createdAt: quotation.createdAt
+          createdAt: quotation.createdAt,
+          quoteId: quotation.quoteId || `QT-${quotation._id?.slice(-6)}`
         })
       } catch (error) {
         console.error('Error fetching quotation:', error)
@@ -133,6 +134,17 @@ const SharedQuotation = () => {
       {/* Minimal Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
         <button 
+          onClick={() => {
+            const cleanUrl = `${window.location.origin}/clean-quotation/${id}`
+            const message = `Computer Shop Quotation\n\nCustomer: ${quotationData.customer.name}\nTotal: ₹${quotationData.totalAmount?.toFixed(2)}\n\nView PDF: ${cleanUrl}`
+            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+            window.open(whatsappUrl, '_blank')
+          }}
+          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+        >
+          📱 WhatsApp
+        </button>
+        <button 
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
         >
@@ -161,7 +173,7 @@ const SharedQuotation = () => {
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Quote Details:</h3>
             <div className="text-gray-700 space-y-1 text-sm sm:text-base">
               <p><span className="font-medium">Date:</span> {new Date(quotationData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Quote #:</span> QT-{Date.now().toString().slice(-6)}</p>
+              <p><span className="font-medium">Quote #:</span> {quotationData.quoteId}</p>
             </div>
           </div>
         </div>

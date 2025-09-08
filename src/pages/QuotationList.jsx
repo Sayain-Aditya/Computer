@@ -21,8 +21,8 @@ const QuotationList = () => {
   const fetchQuotations = async (search = '') => {
     try {
       const url = search 
-        ? `https://computer-shop-ecru.vercel.app/api/orders/quotations/search?search=${encodeURIComponent(search)}`
-        : 'https://computer-shop-ecru.vercel.app/api/orders/quotations/search'
+        ? `https://computer-shop-backend-five.vercel.app/api/orders/quotations/search?search=${encodeURIComponent(search)}`
+        : 'https://computer-shop-backend-five.vercel.app/api/orders/quotations/search'
       
       console.log('API URL:', url)
       const response = await axios.get(url)
@@ -52,7 +52,7 @@ const QuotationList = () => {
     if (!confirm('Are you sure you want to delete this quotation?')) return
     
     try {
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/${quotationId}`)
       toast.success('Quotation deleted successfully!')
       fetchQuotations()
     } catch (error) {
@@ -65,7 +65,7 @@ const QuotationList = () => {
 
   const handleStatusChange = async (quotationId, newStatus) => {
     try {
-      await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/quotations/${quotationId}/status`, {
+      await axios.put(`https://computer-shop-backend-five.vercel.app/api/orders/quotations/${quotationId}/status`, {
         status: newStatus
       })
       
@@ -110,7 +110,7 @@ const QuotationList = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/quotations/export/csv')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)

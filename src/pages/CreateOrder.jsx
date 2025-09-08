@@ -48,7 +48,7 @@ const CreateOrder = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
       setProducts(response.data)
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -57,7 +57,7 @@ const CreateOrder = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -71,7 +71,7 @@ const CreateOrder = () => {
 
   const fetchCompatibleProducts = async (productId) => {
     try {
-      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/products/${productId}/compatible`)
+      const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${productId}/compatible`)
       const compatibleData = response.data.compatibleProducts || []
       setCompatibleProducts(compatibleData)
       setShowCompatible(true)
@@ -217,7 +217,7 @@ const CreateOrder = () => {
 
     try {
       console.log('Creating order with data:', orderData)
-      const response = await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', orderData)
+      const response = await axios.post('https://computer-shop-backend-five.vercel.app/api/orders/create', orderData)
       console.log('Order created successfully:', response.data)
       
       // Update stock for each product in the order
@@ -226,13 +226,13 @@ const CreateOrder = () => {
           console.log(`Updating stock for product ${item._id}, reducing by ${item.orderQuantity}`)
           // Try both API endpoints to see which one works
           try {
-            const stockResponse = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update-stock/${item._id}`, {
+            const stockResponse = await axios.put(`https://computer-shop-backend-five.vercel.app/api/products/update-stock/${item._id}`, {
               quantity: item.orderQuantity
             })
             console.log(`Stock update response (update-stock):`, stockResponse.data)
           } catch (err1) {
             console.log('update-stock failed, trying update endpoint')
-            const stockResponse = await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${item._id}`, {
+            const stockResponse = await axios.put(`https://computer-shop-backend-five.vercel.app/api/products/update/${item._id}`, {
               quantity: item.quantity - item.orderQuantity
             })
             console.log(`Stock update response (update):`, stockResponse.data)
@@ -646,7 +646,7 @@ const CreateOrder = () => {
                         }
 
                         try {
-                          await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                          await axios.post('https://computer-shop-backend-five.vercel.app/api/orders/create', quotationData)
                           toast.success('Quotation generated and saved successfully!')
                           setShowCartModal(false)
                           setTimeout(() => {

@@ -15,28 +15,31 @@ const ViewPDF = () => {
   useEffect(() => {
     const fetchQuotationData = async () => {
       try {
-        const [quotationResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-ecru.vercel.app/api/orders/quotations/search'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-        ])
+        console.log('Fetching quotation with ID:', id)
+        const quotationResponse = await axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/search')
+        console.log('Quotation response:', quotationResponse.data)
         
         const quotation = quotationResponse.data.data?.find(q => q._id === id)
-        if (!quotation) return
+        console.log('Found quotation:', quotation)
         
-        const allProducts = productsResponse.data
-        const allCategories = categoriesResponse.data
+        if (!quotation) {
+          console.log('No quotation found')
+          setLoading(false)
+          return
+        }
+        
         const productsWithNames = quotation.items?.map(item => {
           const product = item.product || {}
-          const category = allCategories.find(c => c._id === product.category)
           return {
             name: item.name || product?.name || 'Product',
             orderQuantity: item.quantity,
             sellingRate: item.price,
             description: product?.description || '',
-            category: category?.name || 'No Category'
+            category: product?.brand || 'No Category'
           }
         }) || []
+        
+        console.log('Processed products:', productsWithNames)
         
         setQuotationData({
           customer: {
@@ -63,8 +66,11 @@ const ViewPDF = () => {
   }
 
   if (!quotationData) {
+    console.log('No quotation data available')
     return <div className="flex items-center justify-center min-h-screen"><p className="text-gray-500">Quotation not found</p></div>
   }
+  
+  console.log('Rendering with quotation data:', quotationData)
 
   return (
     <div className="min-h-screen bg-white">

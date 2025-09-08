@@ -34,9 +34,9 @@ const Product = () => {
       setLoading(true)
       let url
       if (searchTerm) {
-        url = `https://computer-shop-ecru.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
+        url = `https://computer-shop-backend-five.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
       } else {
-        url = `https://computer-shop-ecru.vercel.app/api/products/all?page=${page}`
+        url = `https://computer-shop-backend-five.vercel.app/api/products/all?page=${page}`
       }
       
       if (selectedCategory && !searchTerm) {
@@ -77,7 +77,7 @@ const Product = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -91,7 +91,7 @@ const Product = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/products/delete/${productToDelete}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/products/delete/${productToDelete}`)
       fetchProducts()
       toast.success('✅ Product deleted successfully!')
       setShowDeleteModal(false)
@@ -106,7 +106,7 @@ const Product = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/export/csv')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)

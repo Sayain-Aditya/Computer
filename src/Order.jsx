@@ -30,7 +30,7 @@ const Order = () => {
 
   const fetchOrders = async (page = 1) => {
     try {
-      const response = await axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get?page=${page}`)
+      const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/orders/get?page=${page}`)
       const ordersData = response.data.orders || response.data.data || []
       console.log('Orders data:', ordersData) // Debug log
       // Filter out quotations - only show actual orders
@@ -49,12 +49,19 @@ const Order = () => {
   }
 
   const getFilteredOrders = () => {
-    return orders
+    if (!searchTerm.trim()) return orders
+    
+    return orders.filter(order => 
+      order.customerName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.customerEmail?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order.orderId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      order._id?.toLowerCase().includes(searchTerm.toLowerCase())
+    )
   }
 
   const handleDeleteOrder = async () => {
     try {
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/orders/${orderToDelete}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/${orderToDelete}`)
       toast.success('✅ Order deleted successfully!')
       fetchOrders()
       setShowDeleteModal(false)
@@ -69,7 +76,7 @@ const Order = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/export/csv')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/orders/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
@@ -92,8 +99,8 @@ const Order = () => {
     try {
       // Fetch product details for each item
       const [productsResponse, categoriesResponse] = await Promise.all([
-        axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-        axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+        axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
+        axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       ])
       const allProducts = productsResponse.data
       const allCategories = categoriesResponse.data

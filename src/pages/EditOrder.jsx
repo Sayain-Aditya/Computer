@@ -11,6 +11,7 @@ const EditOrder = () => {
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedProducts, setSelectedProducts] = useState([])
+  const [originalProducts, setOriginalProducts] = useState([])
   const [compatibleProducts, setCompatibleProducts] = useState([])
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -50,8 +51,8 @@ const EditOrder = () => {
   const fetchOrder = async () => {
     try {
       const [orderResponse, productsResponse] = await Promise.all([
-        axios.get(`https://computer-shop-ecru.vercel.app/api/orders/get`),
-        axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+        axios.get(`https://computer-shop-backend-five.vercel.app/api/orders/get`),
+        axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
       ])
       
       const order = orderResponse.data.data?.find(o => o._id === id)
@@ -66,27 +67,33 @@ const EditOrder = () => {
         })
         
         const orderProducts = order.items?.map(item => {
-          let productName = 'Unknown Product'
+          let productData = null
           let productId = item.product
           
           if (typeof item.product === 'object' && item.product?.name) {
-            productName = item.product.name
+            productData = item.product
             productId = item.product._id
           } else if (typeof item.product === 'string') {
-            const product = allProducts.find(p => p._id === item.product)
-            productName = product?.name || `Product ${item.product}`
+            productData = allProducts.find(p => p._id === item.product)
             productId = item.product
           }
           
+          console.log('Loading order item:', item, 'quantity:', item.quantity)
+          
           return {
             _id: productId,
-            name: productName,
-            sellingRate: item.price,
-            orderQuantity: item.quantity
+            name: productData?.name || 'Unknown Product',
+            sellingRate: item.price || productData?.sellingRate || 0,
+            orderQuantity: parseInt(item.quantity) || 0,
+            category: productData?.category,
+            brand: productData?.brand,
+            quantity: productData?.quantity || 0
           }
         }) || []
         
         setSelectedProducts(orderProducts)
+        // Use current order quantities as the new baseline for stock calculations
+        setOriginalProducts(orderProducts.map(p => ({ ...p, orderQuantity: p.orderQuantity })))
       }
     } catch (error) {
       console.error('Error fetching order:', error)
@@ -97,7 +104,7 @@ const EditOrder = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
       setProducts(response.data)
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -106,7 +113,7 @@ const EditOrder = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -116,10 +123,14 @@ const EditOrder = () => {
   const addToOrder = (product, quantity = 1) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
     if (existingItem) {
-      setPendingProduct({ product, quantity })
-      setShowConfirmModal(true)
-      return
+      // For existing items, just increment by 1
+      updateQuantity(product._id, existingItem.orderQuantity + 1)
     } else {
+      // Check stock for new product
+      if (product.quantity < quantity) {
+        toast.error(`Only ${product.quantity} units available in stock`)
+        return
+      }
       setSelectedProducts([...selectedProducts, { ...product, orderQuantity: quantity }])
     }
   }
@@ -128,6 +139,17 @@ const EditOrder = () => {
     if (quantity <= 0) {
       setSelectedProducts(selectedProducts.filter(item => item._id !== productId))
     } else {
+      // Check stock availability
+      const product = products.find(p => p._id === productId)
+      const originalItem = originalProducts.find(p => p._id === productId)
+      const originalQty = originalItem ? originalItem.orderQuantity : 0
+      const availableStock = product.quantity + originalQty
+      
+      if (quantity > availableStock) {
+        toast.error(`Only ${availableStock} units available in stock`)
+        return
+      }
+      
       setSelectedProducts(selectedProducts.map(item =>
         item._id === productId ? { ...item, orderQuantity: quantity } : item
       ))
@@ -165,11 +187,15 @@ const EditOrder = () => {
         quantity: item.orderQuantity,
         price: item.sellingRate
       })),
-      totalAmount: getTotalAmount()
+      totalAmount: getTotalAmount(),
+      type: "Order"
     }
 
     try {
-      await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/update/${id}`, orderData)
+      await axios.put(`https://computer-shop-backend-five.vercel.app/api/orders/update/${id}`, orderData)
+      
+      // Backend handles all stock updates automatically
+      
       toast.success('Order updated successfully!')
       navigate('/orders')
     } catch (error) {
@@ -433,7 +459,7 @@ const EditOrder = () => {
                         </button>
                         <span className="text-sm font-bold w-8 text-center bg-white px-2 py-1 rounded border">{item.orderQuantity}</span>
                         <button
-                          onClick={() => addToOrder(item)}
+                          onClick={() => updateQuantity(item._id, item.orderQuantity + 1)}
                           className="w-8 h-8 bg-green-500 text-white rounded text-sm hover:bg-green-600 flex items-center justify-center transition-colors duration-200"
                         >
                           +
@@ -551,43 +577,7 @@ const EditOrder = () => {
         </div>
       )}
 
-      {/* Confirmation Modal */}
-      {showConfirmModal && pendingProduct && (
-        <div className="fixed inset-0 bg-transparent flex items-center justify-center z-50 p-4 backdrop-blur-md">
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
-            <h3 className="text-lg font-bold text-gray-900 mb-4">Item Already Added</h3>
-            <p className="text-gray-600 mb-6">
-              "{pendingProduct.product.name}" is already in your cart. Do you want to add again?
-            </p>
-            <div className="flex gap-3">
-              <button
-                onClick={() => {
-                  const updatedProducts = selectedProducts.map(item =>
-                    item._id === pendingProduct.product._id 
-                      ? { ...item, orderQuantity: item.orderQuantity + pendingProduct.quantity }
-                      : item
-                  )
-                  setSelectedProducts(updatedProducts)
-                  setShowConfirmModal(false)
-                  setPendingProduct(null)
-                }}
-                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 font-medium"
-              >
-                Yes, Add More
-              </button>
-              <button
-                onClick={() => {
-                  setShowConfirmModal(false)
-                  setPendingProduct(null)
-                }}
-                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
-              >
-                Cancel
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
 
       {/* Update Order Button */}
       <button

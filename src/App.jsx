@@ -15,7 +15,7 @@ import Quotation from "./pages/Quotation";
 import QuotationList from "./pages/QuotationList";
 import SharedQuotation from "./pages/SharedQuotation";
 import SharedOrder from "./pages/SharedOrder";
-
+import ViewPDF from "./pages/ViewPDF";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
@@ -67,6 +67,7 @@ function AppContent() {
           <Route path="/edit-order/:id" element={<div className="p-2 sm:p-4 lg:p-6"><EditOrder /></div>} />
           <Route path="/quotation" element={<div className="p-2 sm:p-4 lg:p-6"><Quotation /></div>} />
           <Route path="/quotation-list" element={<div className="p-2 sm:p-4 lg:p-6"><QuotationList /></div>} />
+          <Route path="/view-pdf/:id" element={<ViewPDF />} />
         </Routes>
       </div>
     </div>
@@ -93,3 +94,7 @@ function App() {
 }
 
 export default App;
+
+
+//https://computer-shop-backend-five.vercel.app
+//https://computer-shop-backend-five.vercel.app

@@ -18,9 +18,9 @@ const OrderPDF = () => {
     const fetchOrderData = async () => {
       try {
         const [ordersResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-ecru.vercel.app/api/orders/get'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/get'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
         ])
         
         const order = ordersResponse.data.data?.find(order => order._id === id && order.type !== 'Quotation')

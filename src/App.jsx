@@ -15,7 +15,7 @@ import Quotation from "./pages/Quotation";
 import QuotationList from "./pages/QuotationList";
 import SharedQuotation from "./pages/SharedQuotation";
 import SharedOrder from "./pages/SharedOrder";
-import CleanSharedQuotation from "./pages/CleanSharedQuotation";
+
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)

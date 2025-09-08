@@ -592,9 +592,18 @@ const CreateOrder = () => {
                         }
 
                         try {
-                          await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
-                          toast.success('Quotation generated and saved successfully!')
+                          const response = await axios.post('https://computer-shop-ecru.vercel.app/api/orders/create', quotationData)
+                          const quotationId = response.data._id || response.data.data?._id
+                          
+                          toast.success('Quotation generated successfully!')
                           setShowCartModal(false)
+                          
+                          // Automatically open PDF view
+                          if (quotationId) {
+                            const pdfUrl = `${window.location.origin}/shared-quotation/${quotationId}`
+                            window.open(pdfUrl, '_blank')
+                          }
+                          
                           setTimeout(() => {
                             navigate('/quotation-list')
                           }, 1500)

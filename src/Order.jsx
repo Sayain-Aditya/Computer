@@ -140,7 +140,7 @@ const Order = () => {
         <head>
           <meta charset="UTF-8">
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
-          <title>Order - ${order._id?.slice(-6)}</title>
+          <title>Order - ${order.orderId || order._id}</title>
           <style>
             @page { margin: 0; size: A4; }
             * { margin: 0; padding: 0; box-sizing: border-box; }

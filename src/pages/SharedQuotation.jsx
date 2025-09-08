@@ -133,17 +133,6 @@ const SharedQuotation = () => {
       {/* Minimal Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
         <button 
-          onClick={() => {
-            const cleanUrl = `${window.location.origin}/clean-quotation/${id}`
-            const message = `Computer Shop Quotation\n\nCustomer: ${quotationData.customer.name}\nTotal: ₹${quotationData.totalAmount?.toFixed(2)}\n\nView PDF: ${cleanUrl}`
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }}
-          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-        >
-          📱 WhatsApp
-        </button>
-        <button 
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
         >

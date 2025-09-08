@@ -8,6 +8,10 @@ const SharedOrder = () => {
   const [orderData, setOrderData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+  // Check if WhatsApp should be shown (for internal use)
+  const urlParams = new URLSearchParams(window.location.search)
+  const showWhatsApp = urlParams.get('internal') === 'true'
 
   // Indian number formatting function
   const formatIndianNumber = (num) => {
@@ -130,18 +134,21 @@ const SharedOrder = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Minimal Controls */}
+      {/* Conditional Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
-        <button 
-          onClick={() => {
-            const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ₹${orderData.totalAmount?.toFixed(2)}\n\nView PDF: ${window.location.href}`
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }}
-          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-        >
-          📱 WhatsApp
-        </button>
+        {showWhatsApp && (
+          <button 
+            onClick={() => {
+              const cleanUrl = `${window.location.origin}/shared-order/${id}`
+              const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ₹${orderData.totalAmount?.toFixed(2)}\n\nView PDF: ${cleanUrl}`
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+              window.open(whatsappUrl, '_blank')
+            }}
+            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+          >
+            📱 WhatsApp
+          </button>
+        )}
         <button 
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"

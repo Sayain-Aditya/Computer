@@ -3,14 +3,14 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { formatIndianCurrency, formatIndianNumber } from '../utils/formatters'
 
 
 const QuotationList = () => {
   const navigate = useNavigate()
   const [quotations, setQuotations] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showConvertModal, setShowConvertModal] = useState(false)
-  const [quotationToConvert, setQuotationToConvert] = useState(null)
+
   const [searchTerm, setSearchTerm] = useState('')
 
 
@@ -21,32 +21,14 @@ const QuotationList = () => {
   const fetchQuotations = async (search = '') => {
     try {
       const url = search 
-        ? `https://computer-shop-ecru.vercel.app/api/orders/get?search=${encodeURIComponent(search)}`
-        : 'https://computer-shop-ecru.vercel.app/api/orders/get'
+        ? `https://computer-shop-backend-five.vercel.app/api/orders/quotations/search?search=${encodeURIComponent(search)}`
+        : 'https://computer-shop-backend-five.vercel.app/api/orders/quotations/search'
       
       console.log('API URL:', url)
       const response = await axios.get(url)
       console.log('API Response:', response.data)
       
-      // Filter only quotations (type: 'Quotation')
-      let quotationData = response.data.data?.filter(order => order.type === 'Quotation') || []
-      
-      // If search returns empty but we have a search term, try without search
-      if (quotationData.length === 0 && search) {
-        console.log('Search returned empty, trying without search...')
-        const fallbackResponse = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/get')
-        const allData = fallbackResponse.data.data?.filter(order => order.type === 'Quotation') || []
-        
-        // Client-side search as fallback
-        quotationData = allData.filter(quotation => 
-          quotation.customerName?.toLowerCase().includes(search.toLowerCase()) ||
-          quotation.customerEmail?.toLowerCase().includes(search.toLowerCase()) ||
-          quotation._id?.toLowerCase().includes(search.toLowerCase()) ||
-          quotation._id?.slice(-6).toLowerCase().includes(search.toLowerCase())
-        )
-      }
-      
-      console.log('Final quotations:', quotationData)
+      const quotationData = response.data.data || []
       
       // Sort quotations by creation date (newest first)
       const sortedQuotations = quotationData.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
@@ -70,7 +52,7 @@ const QuotationList = () => {
     if (!confirm('Are you sure you want to delete this quotation?')) return
     
     try {
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/${quotationId}`)
       toast.success('Quotation deleted successfully!')
       fetchQuotations()
     } catch (error) {
@@ -79,35 +61,23 @@ const QuotationList = () => {
     }
   }
 
-  const handleConvertToOrder = async () => {
-    try {
-      await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationToConvert}/convert`)
-      toast.success('✅ Quotation converted to order successfully!')
-      fetchQuotations()
-      setShowConvertModal(false)
-      setQuotationToConvert(null)
-    } catch (error) {
-      console.error('Error converting quotation:', error)
-      toast.error('❌ Failed to convert quotation. Please try again.')
-      setShowConvertModal(false)
-      setQuotationToConvert(null)
-    }
-  }
+
 
   const handleStatusChange = async (quotationId, newStatus) => {
     try {
-      if (newStatus === 'confirmed') {
-        // Use existing convert API for confirmed status
-        await axios.put(`https://computer-shop-ecru.vercel.app/api/orders/${quotationId}/convert`)
-        toast.success('Status updated to confirmed!')
-      } else {
-        // For pending, just show success (no API call needed)
-        toast.success('Status updated to pending!')
-      }
-      fetchQuotations()
+      await axios.put(`https://computer-shop-backend-five.vercel.app/api/orders/quotations/${quotationId}/status`, {
+        status: newStatus
+      })
+      
+      // Refetch data to get updated status
+      await fetchQuotations(searchTerm)
+      
+      toast.success(`Quotation ${newStatus}!`)
     } catch (error) {
       console.error('Error updating status:', error)
-      toast.error('Failed to update status. Please try again.')
+      console.error('Error response:', error.response?.data)
+      console.error('Error status:', error.response?.status)
+      toast.error('Failed to update status')
     }
   }
 
@@ -121,10 +91,10 @@ const QuotationList = () => {
       
       orderData.products.forEach((item, index) => {
         message += `${index + 1}. ${item.name}\n`
-        message += `   Qty: ${item.orderQuantity} | Rate: ₹${item.sellingRate}\n`
+        message += `   Qty: ${item.orderQuantity} | Rate: ${formatIndianCurrency(item.sellingRate)}\n`
       })
       
-      message += `\n💰 *Total Amount: ₹${orderData.totalAmount.toFixed(2)}*\n\n`
+      message += `\n💰 *Total Amount: ${formatIndianCurrency(orderData.totalAmount)}*\n\n`
       message += `📅 Date: ${new Date().toLocaleDateString()}\n`
       message += `🙏 Thank you for your business!`
       
@@ -140,7 +110,7 @@ const QuotationList = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/orders/quotations/export/csv')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)
@@ -213,20 +183,17 @@ const QuotationList = () => {
       {/* Mobile Card View */}
       <div className="md:hidden space-y-4">
         {quotations.map((quotation, index) => (
-          <motion.div
+          <div
             key={quotation._id}
             className="bg-white border border-gray-200 rounded-lg p-4 shadow-sm"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: index * 0.05 }}
           >
             <div className="flex justify-between items-start mb-3">
               <div className="flex-1">
-                <h3 className="font-medium text-gray-900">#QT-{quotation._id?.slice(-6) || 'N/A'}</h3>
+                <h3 className="font-medium text-gray-900">{quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}</h3>
                 <p className="text-sm text-gray-600">{quotation.customerName}</p>
                 <p className="text-xs text-gray-500">{quotation.customerEmail}</p>
               </div>
-              <span className="text-lg font-bold text-gray-900">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+              <span className="text-lg font-bold text-gray-900">{formatIndianCurrency(quotation.totalAmount || 0)}</span>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
@@ -241,87 +208,36 @@ const QuotationList = () => {
               <div className="col-span-2">
                 <span className="text-gray-500">Status:</span>
                 <select
-                  value={quotation.status}
+                  value={quotation.status || 'Pending'}
                   onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
                   className={`ml-2 px-2 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 ${
-                    quotation.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' :
-                    quotation.status === 'pending' ? 'bg-amber-50 text-amber-600' :
-                    'bg-gray-50 text-gray-600'
+                    quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                    'bg-amber-50 text-amber-600'
                   }`}
                 >
-                  <option value="pending">Pending</option>
-                  <option value="confirmed">Confirmed</option>
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
                 </select>
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
               <button 
-                onClick={async () => {
-                  try {
-                    const [productsResponse, categoriesResponse] = await Promise.all([
-                      axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-                      axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-                    ])
-                    const allProducts = productsResponse.data
-                    const allCategories = categoriesResponse.data
-                    
-                    const productsWithNames = quotation.items?.map(item => {
-                      let productName = 'Unknown Product'
-                      let categoryName = 'N/A'
-                      
-                      if (typeof item.product === 'object' && item.product?.name) {
-                        productName = item.product.name
-                        if (item.product.category?.name) {
-                          categoryName = item.product.category.name
-                        } else if (item.product.category) {
-                          const category = allCategories.find(c => c._id === item.product.category)
-                          categoryName = category?.name || 'N/A'
-                        }
-                      } else if (typeof item.product === 'string') {
-                        const product = allProducts.find(p => p._id === item.product)
-                        productName = product?.name || `Product ${item.product}`
-                        if (product?.category?.name) {
-                          categoryName = product.category.name
-                        } else if (product?.category) {
-                          const category = allCategories.find(c => c._id === product.category)
-                          categoryName = category?.name || 'N/A'
-                        }
-                      }
-                      
-                      return {
-                        name: productName,
-                        orderQuantity: item.quantity,
-                        sellingRate: item.price,
-                        category: { name: categoryName }
-                      }
-                    }) || []
-                    
-                    // Create short shareable PDF link
-                    const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
-                    
-                    // Open PDF in new tab
-                    window.open(shareableUrl, '_blank')
-                    
-                    // Copy link and show WhatsApp option
-                    navigator.clipboard.writeText(shareableUrl)
-                    
-                    const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
-                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                    
-                    setTimeout(() => {
-                      if (confirm('PDF link copied! Open WhatsApp to share?')) {
-                        window.open(whatsappUrl, '_blank')
-                      }
-                    }, 1000)
-                  } catch (error) {
-                    console.error('Error fetching products:', error)
-                    toast.error('Failed to load product details. Please try again.')
-                  }
-                }}
+                onClick={() => navigate(`/view-pdf/${quotation._id}`)}
                 className="px-3 py-2 bg-blue-100 text-blue-700 text-sm font-medium rounded-lg hover:bg-blue-200"
               >
                 View PDF
+              </button>
+              <button 
+                onClick={() => {
+                  const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
+                  const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                  const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                  window.open(whatsappUrl, '_blank')
+                }}
+                className="px-3 py-2 bg-green-100 text-green-700 text-sm font-medium rounded-lg hover:bg-green-200"
+              >
+                Share
               </button>
               <button 
                 onClick={() => handleDeleteQuotation(quotation._id)}
@@ -330,17 +246,12 @@ const QuotationList = () => {
                 Delete
               </button>
             </div>
-          </motion.div>
+          </div>
         ))}
       </div>
 
       {/* Desktop Table View */}
-      <motion.div 
-        className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden"
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.3 }}
-      >
+      <div className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
           <table className="w-full">
             <thead className="bg-slate-50">
@@ -356,15 +267,12 @@ const QuotationList = () => {
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
               {quotations.map((quotation, index) => (
-                <motion.tr 
+                <tr 
                   key={quotation._id}
                   className="hover:bg-gray-50"
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: index * 0.05 }}
                 >
                   <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-800">#QT-{quotation._id?.slice(-6) || 'N/A'}</div>
+                    <div className="text-sm font-medium text-gray-800">{quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}</div>
                   </td>
                   <td className="px-6 py-4">
                     <div>
@@ -378,20 +286,19 @@ const QuotationList = () => {
                     </span>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">₹{quotation.totalAmount?.toFixed(2) || '0.00'}</span>
+                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(quotation.totalAmount || 0)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <select
-                      value={quotation.status}
+                      value={quotation.status || 'Pending'}
                       onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
                       className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer ${
-                        quotation.status === 'confirmed' ? 'bg-emerald-50 text-emerald-600' :
-                        quotation.status === 'pending' ? 'bg-amber-50 text-amber-600' :
-                        'bg-gray-50 text-gray-600'
+                        quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                        'bg-amber-50 text-amber-600'
                       }`}
                     >
-                      <option value="pending">Pending</option>
-                      <option value="confirmed">Confirmed</option>
+                      <option value="Pending">Pending</option>
+                      <option value="Confirmed">Confirmed</option>
                     </select>
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">
@@ -400,71 +307,21 @@ const QuotationList = () => {
                   <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button 
-                        onClick={async () => {
-                          try {
-                            const [productsResponse, categoriesResponse] = await Promise.all([
-                              axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-                              axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
-                            ])
-                            const allProducts = productsResponse.data
-                            const allCategories = categoriesResponse.data
-                            
-                            const productsWithNames = quotation.items?.map(item => {
-                              let productName = 'Unknown Product'
-                              let categoryName = 'N/A'
-                              
-                              if (typeof item.product === 'object' && item.product?.name) {
-                                productName = item.product.name
-                                if (item.product.category?.name) {
-                                  categoryName = item.product.category.name
-                                } else if (item.product.category) {
-                                  const category = allCategories.find(c => c._id === item.product.category)
-                                  categoryName = category?.name || 'N/A'
-                                }
-                              } else if (typeof item.product === 'string') {
-                                const product = allProducts.find(p => p._id === item.product)
-                                productName = product?.name || `Product ${item.product}`
-                                if (product?.category?.name) {
-                                  categoryName = product.category.name
-                                } else if (product?.category) {
-                                  const category = allCategories.find(c => c._id === product.category)
-                                  categoryName = category?.name || 'N/A'
-                                }
-                              }
-                              
-                              return {
-                                name: productName,
-                                orderQuantity: item.quantity,
-                                sellingRate: item.price,
-                                category: { name: categoryName }
-                              }
-                            }) || []
-                            
-                            // Create short shareable PDF link
-                            const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
-                            
-                            // Open PDF in new tab
-                            window.open(shareableUrl, '_blank')
-                            
-                            // Copy link and show WhatsApp option
-                            navigator.clipboard.writeText(shareableUrl)
-                            
-                            const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
-                            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                            
-                            setTimeout(() => {
-                              if (confirm('PDF link copied! Open WhatsApp to share?')) {
-                                window.open(whatsappUrl, '_blank')
-                              }
-                            }, 1000)
-                          } catch (error) {
-                            console.error('Error:', error)
-                            toast.error('Failed to create PDF link. Please try again.')
-                          }
-                        }}
+                        onClick={() => navigate(`/view-pdf/${quotation._id}`)}
                         className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200"
                       >
                         View PDF
+                      </button>
+                      <button 
+                        onClick={() => {
+                          const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
+                          const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                          window.open(whatsappUrl, '_blank')
+                        }}
+                        className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-lg hover:bg-green-200"
+                      >
+                        Share
                       </button>
                       <button 
                         onClick={() => handleDeleteQuotation(quotation._id)}
@@ -474,7 +331,7 @@ const QuotationList = () => {
                       </button>
                     </div>
                   </td>
-                </motion.tr>
+                </tr>
               ))}
             </tbody>
           </table>
@@ -493,38 +350,9 @@ const QuotationList = () => {
             </button>
           </div>
         )}
-      </motion.div>
+      </div>
 
-      {/* Convert Confirmation Modal */}
-      {showConvertModal && (
-        <div className="fixed inset-0 flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full shadow-2xl border-2 border-green-100 transform transition-all">
-            <div className="text-center mb-6">
-              <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-green-100 mb-4">
-                <svg className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-              <h3 className="text-xl font-bold text-gray-900 mb-2">Convert to Order</h3>
-              <p className="text-gray-600">Are you sure you want to convert this quotation to an order?</p>
-            </div>
-            <div className="flex gap-3 justify-center">
-              <button
-                onClick={() => { setShowConvertModal(false); setQuotationToConvert(null); }}
-                className="px-6 py-3 bg-gray-100 text-gray-700 rounded-xl font-medium hover:bg-gray-200 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                onClick={handleConvertToOrder}
-                className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium hover:bg-green-700 transition-colors"
-              >
-                Convert
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+
     </div>
   )
 }

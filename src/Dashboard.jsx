@@ -10,6 +10,7 @@ import {
   ArcElement,
 } from 'chart.js';
 import { Bar, Doughnut } from 'react-chartjs-2';
+import { formatIndianCurrency } from './utils/formatters';
 
 ChartJS.register(
   CategoryScale,
@@ -36,6 +37,21 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
+    // Check if data is cached
+    const cachedData = sessionStorage.getItem('dashboardData')
+    if (cachedData) {
+      try {
+        const parsed = JSON.parse(cachedData)
+        setStats(parsed.stats)
+        setCategories(parsed.categories)
+        setAllOrders(parsed.orders)
+        setLoading(false)
+        return
+      } catch (e) {
+        console.log('Cache invalid, fetching fresh data')
+      }
+    }
+    
     fetchDashboardData().finally(() => setLoading(false));
   }, []);
 
@@ -110,14 +126,17 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      const [categoriesRes, ordersRes, productsRes] = await Promise.all([
-        fetch('https://computer-shop-ecru.vercel.app/api/categories/all'),
-        fetch('https://computer-shop-ecru.vercel.app/api/orders/get'),
-        fetch('https://computer-shop-ecru.vercel.app/api/products/all')
+      // Fetch only essential data first
+      const [categoriesRes, ordersRes] = await Promise.all([
+        fetch('https://computer-shop-backend-five.vercel.app/api/categories/all'),
+        fetch('https://computer-shop-backend-five.vercel.app/api/orders/get')
       ]);
 
       const categories = await categoriesRes.json()
       const ordersResponse = await ordersRes.json()
+      
+      // Fetch products separately to avoid blocking
+      const productsRes = await fetch('https://computer-shop-backend-five.vercel.app/api/products/all')
       const products = await productsRes.json()
       
       const orders = ordersResponse.orders || ordersResponse.data || []
@@ -141,21 +160,37 @@ const Dashboard = () => {
         }
       })
 
-      // Process category-wise products
+      // Process category-wise products with fallback
       const categoryCount = {}
-      const productList = products.products || products
-      productList.forEach(product => {
-        const categoryName = product.category?.name || 'Uncategorized'
-        categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1
-      })
+      const productList = products?.products || products || []
+      if (Array.isArray(productList)) {
+        productList.forEach(product => {
+          const categoryName = product.category?.name || 'Uncategorized'
+          categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1
+        })
+      }
 
-      setCategories(categories)
-      setStats({
+      const newStats = {
         totalCategories: categories.length,
         yearlyOrders: monthlyOrders,
         yearlySales: monthlySales,
         categoryProducts: Object.entries(categoryCount)
-      })
+      }
+      
+      setCategories(categories)
+      setStats(newStats)
+      
+      // Cache data for 5 minutes
+      try {
+        sessionStorage.setItem('dashboardData', JSON.stringify({
+          stats: newStats,
+          categories,
+          orders,
+          timestamp: Date.now()
+        }))
+      } catch (e) {
+        console.log('Failed to cache data')
+      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data: ' + error.message);
@@ -279,9 +314,17 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <div className="text-center">Loading...</div>
+      <div className="p-4 sm:p-6">
+        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Dashboard</h1>
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
+          {[1,2,3,4].map(i => (
+            <div key={i} className="bg-white p-4 sm:p-6 rounded-lg shadow animate-pulse">
+              <div className="h-4 bg-gray-200 rounded mb-2"></div>
+              <div className="h-8 bg-gray-200 rounded"></div>
+            </div>
+          ))}
+        </div>
+        <div className="text-center text-gray-500">Loading dashboard...</div>
       </div>
     );
   }
@@ -319,7 +362,7 @@ const Dashboard = () => {
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
-          <p className="text-xl sm:text-3xl font-bold text-purple-600">₹{Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0).toLocaleString() : 0}</p>
+          <p className="text-xl sm:text-3xl font-bold text-purple-600">{formatIndianCurrency(Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0)}</p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
@@ -343,7 +386,7 @@ const Dashboard = () => {
                   fetchDashboardData();
                 }
               }}
-              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -372,7 +415,7 @@ const Dashboard = () => {
                   fetchDashboardData();
                 }
               }}
-              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
             >
               <option value="">All Categories</option>
               {categories.map(category => (

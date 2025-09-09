@@ -25,7 +25,7 @@ const Category = () => {
   const fetchCategories = async () => {
     try {
       setError('')
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       setError('Failed to fetch categories')
@@ -42,10 +42,10 @@ const Category = () => {
     
     try {
       if (editId) {
-        await axios.put(`https://computer-shop-ecru.vercel.app/api/categories/update/${editId}`, formData)
+        await axios.put(`https://computer-shop-backend-five.vercel.app/api/categories/update/${editId}`, formData)
         toast.success('Category updated successfully!')
       } else {
-        await axios.post('https://computer-shop-ecru.vercel.app/api/categories/create', formData)
+        await axios.post('https://computer-shop-backend-five.vercel.app/api/categories/create', formData)
         toast.success('Category created successfully!')
       }
       fetchCategories()
@@ -72,7 +72,7 @@ const Category = () => {
     
     try {
       setError('')
-      await axios.delete(`https://computer-shop-ecru.vercel.app/api/categories/delete/${id}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/categories/delete/${id}`)
       toast.success('Category deleted successfully!')
       fetchCategories()
     } catch (error) {

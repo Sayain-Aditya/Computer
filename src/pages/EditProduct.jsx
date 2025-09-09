@@ -29,7 +29,7 @@ const EditProduct = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -38,7 +38,7 @@ const EditProduct = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await axios.get('https://computer-shop-ecru.vercel.app/api/products/all')
+      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
       const product = response.data.find(p => p._id === id)
       
       if (!product) {
@@ -70,7 +70,7 @@ const EditProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`https://computer-shop-ecru.vercel.app/api/products/update/${id}`, formData)
+      await axios.put(`https://computer-shop-backend-five.vercel.app/api/products/update/${id}`, formData)
       toast.success('Product updated successfully!')
       navigate('/products')
     } catch (error) {

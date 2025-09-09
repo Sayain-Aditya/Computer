@@ -1,18 +1,18 @@
 import React, { useEffect, useState } from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useSearchParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import axios from 'axios'
+import { formatIndianNumber, formatIndianCurrency } from '../utils/formatters'
 
 const SharedQuotation = () => {
   const { id } = useParams()
+  const [searchParams] = useSearchParams()
+  const isClean = searchParams.get('clean') === 'true'
   const [quotationData, setQuotationData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-  // Indian number formatting function
-  const formatIndianNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(num)
-  }
+
 
   useEffect(() => {
     // Validate ID format
@@ -26,9 +26,9 @@ const SharedQuotation = () => {
       try {
         // Fetch all data in parallel for faster loading
         const [ordersResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-ecru.vercel.app/api/orders/get'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/get'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
         ])
         
         const quotation = ordersResponse.data.data?.find(order => order._id === id && order.type === 'Quotation')
@@ -36,7 +36,7 @@ const SharedQuotation = () => {
         if (!quotation) {
           setError('Quotation not found')
           setLoading(false)
-          return
+          return  
         }
         
         const allProducts = productsResponse.data
@@ -72,7 +72,8 @@ const SharedQuotation = () => {
           },
           products: productsWithNames,
           totalAmount: quotation.totalAmount || 0,
-          createdAt: quotation.createdAt
+          createdAt: quotation.createdAt,
+          quoteId: quotation.quoteId || `QT-${quotation._id?.slice(-6)}`
         })
       } catch (error) {
         console.error('Error fetching quotation:', error)
@@ -172,7 +173,7 @@ const SharedQuotation = () => {
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Quote Details:</h3>
             <div className="text-gray-700 space-y-1 text-sm sm:text-base">
               <p><span className="font-medium">Date:</span> {new Date(quotationData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Quote #:</span> QT-{Date.now().toString().slice(-6)}</p>
+              <p><span className="font-medium">Quote #:</span> {quotationData.quoteId}</p>
             </div>
           </div>
         </div>

@@ -2,17 +2,22 @@ import React, { useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { motion } from 'motion/react'
 import axios from 'axios'
+import { formatIndianNumber, formatIndianCurrency } from '../utils/formatters'
 
 const SharedOrder = () => {
   const { id } = useParams()
   const [orderData, setOrderData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
+  
+ 
+   // Check if WhatsApp should be shown (for internal use)
+  const urlParams = new URLSearchParams(window.location.search)
+  const showWhatsApp = urlParams.get('internal') === 'true'
 
-  // Indian number formatting function
-  const formatIndianNumber = (num) => {
-    return new Intl.NumberFormat('en-IN').format(num)
-  }
+
+
+
 
   useEffect(() => {
     // Validate ID format
@@ -26,9 +31,9 @@ const SharedOrder = () => {
       try {
         // Fetch all data in parallel for faster loading
         const [ordersResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-ecru.vercel.app/api/orders/get'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/products/all'),
-          axios.get('https://computer-shop-ecru.vercel.app/api/categories/all')
+          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/get'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
         ])
         
         const order = ordersResponse.data.data?.find(order => order._id === id && order.type !== 'Quotation')
@@ -72,7 +77,8 @@ const SharedOrder = () => {
           },
           products: productsWithNames,
           totalAmount: order.totalAmount || 0,
-          createdAt: order.createdAt
+          createdAt: order.createdAt,
+          orderId: order.orderId || `OR-${order._id?.slice(-6)}`
         })
       } catch (error) {
         console.error('Error fetching order:', error)
@@ -130,18 +136,21 @@ const SharedOrder = () => {
 
   return (
     <div className="min-h-screen bg-white">
-      {/* Minimal Controls */}
+      {/* Conditional Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
-        <button 
-          onClick={() => {
-            const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ₹${orderData.totalAmount?.toFixed(2)}\n\nView PDF: ${window.location.href}`
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }}
-          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-        >
-          📱 WhatsApp
-        </button>
+        {showWhatsApp && (
+          <button 
+            onClick={() => {
+              const cleanUrl = `${window.location.origin}/shared-order/${id}`
+              const message = `Computer Shop Order\n\nCustomer: ${orderData.customer.name}\nTotal: ${formatIndianCurrency(orderData.totalAmount)}\n\nView PDF: ${cleanUrl}`
+              const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+              window.open(whatsappUrl, '_blank')
+            }}
+            className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
+          >
+            📱 WhatsApp
+          </button>
+        )}
         <button 
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
@@ -171,7 +180,7 @@ const SharedOrder = () => {
             <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Order Details:</h3>
             <div className="text-gray-700 space-y-1 text-sm sm:text-base">
               <p><span className="font-medium">Date:</span> {new Date(orderData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Order #:</span> OR-{Date.now().toString().slice(-6)}</p>
+              <p><span className="font-medium">Order #:</span> {orderData.orderId}</p>
             </div>
           </div>
         </div>

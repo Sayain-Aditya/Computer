@@ -16,6 +16,7 @@ import QuotationList from "./pages/QuotationList";
 import SharedQuotation from "./pages/SharedQuotation";
 import SharedOrder from "./pages/SharedOrder";
 import ViewPDF from "./pages/ViewPDF";
+import OrderPDF from "./pages/OrderPDF";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
@@ -68,6 +69,7 @@ function AppContent() {
           <Route path="/quotation" element={<div className="p-2 sm:p-4 lg:p-6"><Quotation /></div>} />
           <Route path="/quotation-list" element={<div className="p-2 sm:p-4 lg:p-6"><QuotationList /></div>} />
           <Route path="/view-pdf/:id" element={<ViewPDF />} />
+          <Route path="/order-pdf/:id" element={<OrderPDF />} />
         </Routes>
       </div>
     </div>

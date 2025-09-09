@@ -386,7 +386,7 @@ const Dashboard = () => {
                   fetchDashboardData();
                 }
               }}
-              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
             >
               <option value="">All Categories</option>
               {categories.map(category => (
@@ -415,7 +415,7 @@ const Dashboard = () => {
                   fetchDashboardData();
                 }
               }}
-              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500"
+              className="w-full max-w-xs px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:border-blue-500 bg-white"
             >
               <option value="">All Categories</option>
               {categories.map(category => (

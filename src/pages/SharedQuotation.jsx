@@ -43,23 +43,14 @@ const SharedQuotation = () => {
         const allCategories = categoriesResponse.data
         
         const productsWithNames = quotation.items?.map(item => {
-          let productName = 'Unknown Product'
-          let categoryName = 'N/A'
-          
-          if (typeof item.product === 'object' && item.product?.name) {
-            productName = item.product.name
-            categoryName = item.product.category?.name || 'N/A'
-          } else if (typeof item.product === 'string') {
-            const product = allProducts.find(p => p._id === item.product)
-            productName = product?.name || `Product ${item.product}`
-            categoryName = product?.category?.name || 'N/A'
-          }
-          
+          const product = item.product || {}
+          const category = allCategories.find(c => c._id === product.category)
           return {
-            name: productName,
+            name: item.name || product?.name || 'Product',
             orderQuantity: item.quantity,
             sellingRate: item.price,
-            category: { name: categoryName }
+            description: product?.description || '',
+            category: category?.name || ''
           }
         }) || []
         
@@ -134,17 +125,6 @@ const SharedQuotation = () => {
       {/* Minimal Controls */}
       <div className="no-print p-2 flex justify-end gap-2">
         <button 
-          onClick={() => {
-            const cleanUrl = `${window.location.origin}/clean-quotation/${id}`
-            const message = `Computer Shop Quotation\n\nCustomer: ${quotationData.customer.name}\nTotal: ₹${quotationData.totalAmount?.toFixed(2)}\n\nView PDF: ${cleanUrl}`
-            const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-            window.open(whatsappUrl, '_blank')
-          }}
-          className="px-3 py-1 bg-green-600 text-white text-sm rounded hover:bg-green-700"
-        >
-          📱 WhatsApp
-        </button>
-        <button 
           onClick={handlePrint}
           className="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700"
         >
@@ -195,7 +175,8 @@ const SharedQuotation = () => {
                   <td className="border border-gray-300 px-2 sm:px-6 py-2 sm:py-4">
                     <div>
                       <p className="font-semibold text-gray-800 text-xs sm:text-base">{item.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-600">{item.category?.name}</p>
+                      {item.description && <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>}
+                      {item.category && <p className="text-xs text-gray-500">{item.category}</p>}
                     </div>
                   </td>
                   <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>

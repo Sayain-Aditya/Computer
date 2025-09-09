@@ -48,23 +48,14 @@ const SharedOrder = () => {
         const allCategories = categoriesResponse.data
         
         const productsWithNames = order.items?.map(item => {
-          let productName = 'Unknown Product'
-          let categoryName = 'N/A'
-          
-          if (typeof item.product === 'object' && item.product?.name) {
-            productName = item.product.name
-            categoryName = item.product.category?.name || 'N/A'
-          } else if (typeof item.product === 'string') {
-            const product = allProducts.find(p => p._id === item.product)
-            productName = product?.name || `Product ${item.product}`
-            categoryName = product?.category?.name || 'N/A'
-          }
-          
+          const product = item.product || {}
+          const category = allCategories.find(c => c._id === product.category)
           return {
-            name: productName,
+            name: item.name || product?.name || 'Product',
             orderQuantity: item.quantity,
             sellingRate: item.price,
-            category: { name: categoryName }
+            description: product?.description || '',
+            category: category?.name || ''
           }
         }) || []
         
@@ -202,7 +193,8 @@ const SharedOrder = () => {
                   <td className="border border-gray-300 px-2 sm:px-6 py-2 sm:py-4">
                     <div>
                       <p className="font-semibold text-gray-800 text-xs sm:text-base">{item.name}</p>
-                      <p className="text-xs sm:text-sm text-gray-600">{item.category?.name}</p>
+                      {item.description && <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>}
+                      {item.category && <p className="text-xs text-gray-500">{item.category}</p>}
                     </div>
                   </td>
                   <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>

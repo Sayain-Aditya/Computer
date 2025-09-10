@@ -72,40 +72,58 @@ const CreateOrder = () => {
 
   const fetchCompatibleProducts = async (productId) => {
     try {
+      console.log('Fetching compatible products for:', productId)
+      const selectedProduct = products.find(p => p._id === productId)
+      console.log('Selected product:', selectedProduct?.name, 'Category:', selectedProduct?.category?.name)
+      
       const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${productId}/compatible`)
-      const compatibleData = response.data.compatibleProducts || []
+      console.log('Backend API response status:', response.status)
+      console.log('Backend API response data:', response.data)
+      
+      let compatibleData = response.data.compatibleProducts || []
+      console.log('Raw compatible products from backend:', compatibleData.length)
+      
+      // Filter out products from categories already selected
+      const selectedCategories = selectedProducts.map(item => item.category?._id).filter(Boolean)
+      console.log('Already selected categories:', selectedCategories)
+      
+      compatibleData = compatibleData.filter(product => 
+        !selectedCategories.includes(product.category?._id)
+      )
+      
+      console.log('Compatible products after filtering:', compatibleData.length)
+      console.log('Compatible products details:', compatibleData.map(p => ({ name: p.name, category: p.category?.name })))
+      
       setCompatibleProducts(compatibleData)
       setShowCompatible(true)
       if (compatibleData.length === 0) {
         toast.info('No compatible products found')
+      } else {
+        console.log('Compatible products section should now be visible')
+        // Scroll to compatible products section after a short delay
+        setTimeout(() => {
+          const element = document.querySelector('.compatible-products-section')
+          if (element) {
+            element.scrollIntoView({ behavior: 'smooth', block: 'start' })
+            console.log('Scrolled to compatible products section')
+          } else {
+            console.log('Compatible products section element not found in DOM')
+          }
+        }, 100)
       }
     } catch (error) {
       console.error('Error fetching compatible products:', error)
+      console.error('Error response status:', error.response?.status)
+      console.error('Error response data:', error.response?.data)
       setCompatibleProducts([])
       setShowCompatible(true)
       toast.error('Failed to fetch compatible products')
     }
   }
 
-  const getCompatibleMotherboards = (cpuProduct) => {
-    const cpuAttrs = cpuProduct.attributes || {}
-    
-    // Only proceed if CPU has all three required attributes
-    if (!cpuAttrs.socketType || !cpuAttrs.ChipsetSupport || !cpuAttrs.RamType) {
-      return []
-    }
-    
-    return products.filter(product => {
-      if (!product.category?.name?.toLowerCase().includes('motherboard')) return false
-      
-      const mbAttrs = product.attributes || {}
-      
-      // Require ALL three attributes to match exactly
-      return mbAttrs.socketType === cpuAttrs.socketType &&
-             mbAttrs.ChipsetSupport === cpuAttrs.ChipsetSupport &&
-             mbAttrs.RamType === cpuAttrs.RamType
-    })
-  }
+
+
+
 
   const addToOrder = (product, quantity = 1) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
@@ -131,12 +149,7 @@ const CreateOrder = () => {
     
     // Auto-show compatible motherboards if CPU is added
     if (product.category?.name?.toLowerCase().includes('cpu') || product.category?.name?.toLowerCase().includes('processor')) {
-      const compatibleMBs = getCompatibleMotherboards(product)
-      setCompatibleProducts(compatibleMBs)
-      setShowCompatible(true)
-      if (compatibleMBs.length === 0) {
-        toast.info('No compatible motherboards found')
-      }
+      fetchCompatibleProducts(product._id)
       setTimeout(() => {
         const element = document.querySelector('.compatible-products-section')
         if (element) {

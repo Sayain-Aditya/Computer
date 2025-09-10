@@ -54,7 +54,7 @@ const QuotationList = () => {
     try {
       await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/${quotationId}`)
       toast.success('Quotation deleted successfully!')
-      fetchQuotations()
+      fetchQuotations(searchTerm)
     } catch (error) {
       console.error('Error deleting quotation:', error)
       toast.error('Failed to delete quotation. Please try again.')

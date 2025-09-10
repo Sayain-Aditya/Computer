@@ -27,12 +27,16 @@ const Dashboard = () => {
     totalCategories: 0,
     yearlyOrders: Array(12).fill(0),
     yearlySales: Array(12).fill(0),
-    categoryProducts: []
+    categoryProducts: [],
+    totalYearlyOrders: 0,
+    totalYearlySales: 0
   });
   const [categories, setCategories] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [selectedOrderCategory, setSelectedOrderCategory] = useState('');
   const [selectedSalesCategory, setSelectedSalesCategory] = useState('');
+  const [filteredOrdersData, setFilteredOrdersData] = useState(Array(12).fill(0));
+  const [filteredSalesData, setFilteredSalesData] = useState(Array(12).fill(0));
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -58,41 +62,22 @@ const Dashboard = () => {
   useEffect(() => {
     if (selectedOrderCategory && allOrders.length > 0) {
       const filteredData = filterOrdersByCategory(selectedOrderCategory, 'orders');
-      setStats(prev => ({ ...prev, yearlyOrders: filteredData }));
+      setFilteredOrdersData(filteredData);
     } else if (!selectedOrderCategory && allOrders.length > 0) {
       // Reset to all orders
-      const currentYear = new Date().getFullYear();
-      const monthlyOrders = Array(12).fill(0);
-      allOrders.forEach(order => {
-        const orderDate = new Date(order.createdAt);
-        if (orderDate.getFullYear() === currentYear) {
-          monthlyOrders[orderDate.getMonth()]++;
-        }
-      });
-      setStats(prev => ({ ...prev, yearlyOrders: monthlyOrders }));
+      setFilteredOrdersData(stats.yearlyOrders);
     }
-  }, [selectedOrderCategory, allOrders]);
+  }, [selectedOrderCategory, allOrders, stats.yearlyOrders]);
 
   useEffect(() => {
     if (selectedSalesCategory && allOrders.length > 0) {
       const filteredData = filterOrdersByCategory(selectedSalesCategory, 'sales');
-      setStats(prev => ({ ...prev, yearlySales: filteredData }));
+      setFilteredSalesData(filteredData);
     } else if (!selectedSalesCategory && allOrders.length > 0) {
       // Reset to all sales
-      const currentYear = new Date().getFullYear();
-      const monthlySales = Array(12).fill(0);
-      allOrders.forEach(order => {
-        const orderDate = new Date(order.createdAt);
-        if (orderDate.getFullYear() === currentYear) {
-          const orderTotal = order.items?.reduce((total, item) => {
-            return total + ((item.price || 0) * (item.quantity || 0));
-          }, 0) || 0;
-          monthlySales[orderDate.getMonth()] += orderTotal;
-        }
-      });
-      setStats(prev => ({ ...prev, yearlySales: monthlySales }));
+      setFilteredSalesData(stats.yearlySales);
     }
-  }, [selectedSalesCategory, allOrders]);
+  }, [selectedSalesCategory, allOrders, stats.yearlySales]);
 
   const filterOrdersByCategory = (categoryId, type) => {
     const currentYear = new Date().getFullYear();
@@ -142,21 +127,29 @@ const Dashboard = () => {
       const orders = ordersResponse.orders || ordersResponse.data || []
       setAllOrders(orders)
       
-      // Process yearly orders data
+      // Process yearly orders data (exclude quotations)
       const currentYear = new Date().getFullYear()
       const monthlyOrders = Array(12).fill(0)
       const monthlySales = Array(12).fill(0)
+      let totalOrdersCount = 0
+      let totalSalesAmount = 0
 
       orders.forEach(order => {
+        // Skip quotations, only count actual orders
+        if (order.type === 'Quotation') return
+        
         const orderDate = new Date(order.createdAt)
         if (orderDate.getFullYear() === currentYear) {
           const month = orderDate.getMonth()
           monthlyOrders[month]++
+          totalOrdersCount++
+          
           // Calculate actual total from items
           const orderTotal = order.items?.reduce((total, item) => {
             return total + ((item.price || 0) * (item.quantity || 0))
           }, 0) || 0
           monthlySales[month] += orderTotal
+          totalSalesAmount += orderTotal
         }
       })
 
@@ -174,8 +167,13 @@ const Dashboard = () => {
         totalCategories: categories.length,
         yearlyOrders: monthlyOrders,
         yearlySales: monthlySales,
-        categoryProducts: Object.entries(categoryCount)
+        categoryProducts: Object.entries(categoryCount),
+        totalYearlyOrders: totalOrdersCount,
+        totalYearlySales: totalSalesAmount
       }
+      
+      setFilteredOrdersData(monthlyOrders)
+      setFilteredSalesData(monthlySales)
       
       setCategories(categories)
       setStats(newStats)
@@ -205,7 +203,7 @@ const Dashboard = () => {
     labels: months,
     datasets: [{
       label: selectedOrderCategory ? `Orders - ${categories.find(c => c._id === selectedOrderCategory)?.name || 'Category'}` : 'Monthly Orders',
-      data: stats.yearlyOrders,
+      data: filteredOrdersData,
       backgroundColor: 'rgba(59, 130, 246, 0.8)',
       borderColor: 'rgba(59, 130, 246, 1)',
       borderWidth: 2,
@@ -218,7 +216,7 @@ const Dashboard = () => {
     labels: months,
     datasets: [{
       label: selectedSalesCategory ? `Sales - ${categories.find(c => c._id === selectedSalesCategory)?.name || 'Category'}` : 'Monthly Sales (₹)',
-      data: stats.yearlySales,
+      data: filteredSalesData,
       backgroundColor: 'rgba(34, 197, 94, 0.8)',
       borderColor: 'rgba(34, 197, 94, 1)',
       borderWidth: 2,
@@ -358,11 +356,11 @@ const Dashboard = () => {
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-green-600">{Array.isArray(stats.yearlyOrders) ? stats.yearlyOrders.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0}</p>
+          <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalYearlyOrders || 0}</p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
-          <p className="text-xl sm:text-3xl font-bold text-purple-600">{formatIndianCurrency(Array.isArray(stats.yearlySales) ? stats.yearlySales.reduce((a, b) => (Number(a) || 0) + (Number(b) || 0), 0) : 0)}</p>
+          <p className="text-xl sm:text-3xl font-bold text-purple-600">{formatIndianCurrency(stats.totalYearlySales || 0)}</p>
         </div>
         <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
           <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>

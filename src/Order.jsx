@@ -348,7 +348,7 @@ const Order = () => {
               </div>
             </div>
             
-            <div className="grid grid-cols-2 gap-2">
+            {/* <div className="grid grid-cols-2 gap-2">
               <button 
                 onClick={() => navigate(`/order-pdf/${order._id}`)}
                 className="px-3 py-2 bg-gray-100 text-gray-700 text-sm font-medium rounded-lg hover:bg-gray-200"
@@ -384,7 +384,7 @@ const Order = () => {
               >
                 Delete
               </button>
-            </div>
+            </div> */}
           </div>
         ))}
       </div>
@@ -400,7 +400,7 @@ const Order = () => {
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Items</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
+                {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th> */}
               </tr>
             </thead>
             <tbody className="bg-white divide-y divide-gray-100">
@@ -429,7 +429,7 @@ const Order = () => {
                   <td className="px-6 py-4 text-sm text-gray-600">
                     {new Date(order.createdAt).toLocaleDateString()}
                   </td>
-                  <td className="px-6 py-4">
+                  {/* <td className="px-6 py-4">
                     <div className="flex gap-2">
                       <button 
                         onClick={() => navigate(`/order-pdf/${order._id}`)}
@@ -467,7 +467,7 @@ const Order = () => {
                         Delete
                       </button>
                     </div>
-                  </td>
+                  </td> */}
                 </tr>
               ))}
             </tbody>

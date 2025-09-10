@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'framer-motion'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { formatIndianCurrency } from '../utils/formatters'
 
 const CreateOrder = () => {
   const navigate = useNavigate()
@@ -402,7 +403,7 @@ const CreateOrder = () => {
                       </td>
                       <td className="px-4 py-3 text-sm text-gray-500">{product.category?.name || 'N/A'}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{product.brand || 'N/A'}</td>
-                      <td className="px-4 py-3 text-sm font-medium text-green-600">₹{product.sellingRate}</td>
+                      <td className="px-4 py-3 text-sm font-medium text-green-600">{formatIndianCurrency(product.sellingRate)}</td>
                       <td className="px-4 py-3 text-sm text-gray-500">{product.quantity}</td>
                       <td className="px-4 py-3">
                         <motion.button
@@ -441,7 +442,7 @@ const CreateOrder = () => {
                           className="text-blue-600 hover:text-blue-800 hover:underline text-left w-full"
                         >
                           <p className="font-medium text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{product.category?.name} • ₹{product.sellingRate}</p>
+                          <p className="text-xs text-gray-500 mt-0.5">{product.category?.name} • {formatIndianCurrency(product.sellingRate)}</p>
                         </button>
                       </div>
                       
@@ -507,7 +508,7 @@ const CreateOrder = () => {
                         <div key={product._id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-blue-200 rounded-xl hover:shadow-md hover:border-blue-300 transition-all duration-200">
                           <div className="flex-1 mb-3 sm:mb-0">
                             <p className="font-semibold text-sm text-gray-900">{product.name}</p>
-                            <p className="text-xs text-gray-600 mt-1">{product.brand || 'N/A'} • ₹{product.sellingRate} • Stock: {product.quantity}</p>
+                            <p className="text-xs text-gray-600 mt-1">{product.brand || 'N/A'} • {formatIndianCurrency(product.sellingRate)} • Stock: {product.quantity}</p>
                           </div>
                           <button
                             onClick={() => addToOrder(product)}
@@ -558,7 +559,7 @@ const CreateOrder = () => {
                     <div key={item._id} className="flex justify-between items-center p-3 bg-gradient-to-r from-gray-50 to-gray-100 border border-gray-200 rounded-lg hover:shadow-md transition-all duration-200">
                       <div className="flex-1 min-w-0">
                         <p className="font-semibold text-sm text-gray-900 truncate">{item.name}</p>
-                        <p className="text-sm text-gray-600">₹{item.sellingRate} each</p>
+                        <p className="text-sm text-gray-600">{formatIndianCurrency(item.sellingRate)} each</p>
                       </div>
                       <div className="flex items-center gap-2 ml-3">
                         <button
@@ -583,7 +584,7 @@ const CreateOrder = () => {
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg mb-4">
                     <div className="flex justify-between items-center">
                       <span className="text-lg font-semibold text-gray-700">Total Amount:</span>
-                      <span className="text-2xl font-bold text-green-600">₹{getTotalAmount().toFixed(2)}</span>
+                      <span className="text-2xl font-bold text-green-600">{formatIndianCurrency(getTotalAmount())}</span>
                     </div>
                   </div>
                   
@@ -702,7 +703,7 @@ const CreateOrder = () => {
                 <p className="text-sm text-gray-600"><strong>Category:</strong> {selectedProduct.category?.name || 'N/A'}</p>
                 <p className="text-sm text-gray-600"><strong>Brand:</strong> {selectedProduct.brand || 'N/A'}</p>
                 <p className="text-sm text-gray-600"><strong>Model:</strong> {selectedProduct.modelNumber || 'N/A'}</p>
-                <p className="text-sm text-gray-600"><strong>Price:</strong> <span className="text-green-600 font-medium text-lg">₹{selectedProduct.sellingRate}</span></p>
+                <p className="text-sm text-gray-600"><strong>Price:</strong> <span className="text-green-600 font-medium text-lg">{formatIndianCurrency(selectedProduct.sellingRate)}</span></p>
               </div>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600"><strong>Stock:</strong> {selectedProduct.quantity}</p>

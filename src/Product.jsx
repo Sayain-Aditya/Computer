@@ -34,14 +34,13 @@ const Product = () => {
     try {
       setLoading(true)
       let url
-      if (searchTerm) {
+      
+      if (selectedCategory) {
+        url = `https://computer-shop-backend-five.vercel.app/api/products/category/${selectedCategory}`
+      } else if (searchTerm) {
         url = `https://computer-shop-backend-five.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
       } else {
-        url = `https://computer-shop-backend-five.vercel.app/api/products/all?page=${page}`
-      }
-      
-      if (selectedCategory && !searchTerm) {
-        url += `&category=${selectedCategory}`
+        url = 'https://computer-shop-backend-five.vercel.app/api/products/all'
       }
       
       console.log('Fetching URL:', url)

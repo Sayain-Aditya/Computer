@@ -35,19 +35,39 @@ const EditOrder = () => {
   }, [id])
 
   useEffect(() => {
-    const hasMotherboard = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('motherboard')
-    )
-    const hasCPU = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('cpu') || 
-      item.category?.name?.toLowerCase().includes('processor')
-    )
-    
-    if (!hasMotherboard && !hasCPU) {
+    fetchCompatibleProducts()
+  }, [selectedProducts])
+
+  const fetchCompatibleProducts = async () => {
+    if (selectedProducts.length === 0) {
       setShowCompatible(false)
       setCompatibleProducts([])
+      return
     }
-  }, [selectedProducts])
+
+    try {
+      const compatibleProductsSet = new Set()
+      
+      for (const product of selectedProducts) {
+        const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${product._id}/compatible`)
+        if (response.data && response.data.length > 0) {
+          response.data.forEach(compatibleProduct => {
+            if (!selectedProducts.some(selected => selected._id === compatibleProduct._id)) {
+              compatibleProductsSet.add(JSON.stringify(compatibleProduct))
+            }
+          })
+        }
+      }
+      
+      const uniqueCompatibleProducts = Array.from(compatibleProductsSet).map(item => JSON.parse(item))
+      setCompatibleProducts(uniqueCompatibleProducts)
+      setShowCompatible(uniqueCompatibleProducts.length > 0)
+    } catch (error) {
+      console.error('Error fetching compatible products:', error)
+      setCompatibleProducts([])
+      setShowCompatible(false)
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -290,6 +310,30 @@ const EditOrder = () => {
             </select>
           </div>
         </div>
+
+        {showCompatible && compatibleProducts.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-sm p-4 sm:p-6 border border-green-200">
+            <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+              Compatible Products
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {compatibleProducts.slice(0, 6).map(product => (
+                <div key={product._id} className="bg-white p-3 rounded-lg border border-green-200 hover:shadow-md transition-all duration-200">
+                  <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                  <p className="text-xs text-gray-600 mt-1">{product.category?.name} • ₹{product.sellingRate}</p>
+                  <button
+                    onClick={() => addToOrder(product)}
+                    disabled={product.quantity === 0}
+                    className="mt-2 w-full px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {product.quantity === 0 ? 'Out of Stock' : 'Add Compatible'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
           <div className="hidden md:block overflow-x-auto">

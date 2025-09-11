@@ -4,6 +4,7 @@ import { motion } from 'framer-motion'
 import { toast } from 'react-toastify'
 import axios from 'axios'
 import { formatIndianCurrency } from '../utils/formatters'
+import CompatibilityCheck from './CompatibilityCheck'
 
 const CreateOrder = () => {
   const navigate = useNavigate()
@@ -11,14 +12,12 @@ const CreateOrder = () => {
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
   const [selectedProducts, setSelectedProducts] = useState([])
-  const [compatibleProducts, setCompatibleProducts] = useState([])
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
     phone: '',
     address: ''
   })
-  const [showCompatible, setShowCompatible] = useState(false)
   const [selectedProduct, setSelectedProduct] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [showCartModal, setShowCartModal] = useState(false)
@@ -30,22 +29,7 @@ const CreateOrder = () => {
     fetchCategories()
   }, [])
 
-  useEffect(() => {
-    // Check if there are any motherboards or CPUs in selected products
-    const hasMotherboard = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('motherboard')
-    )
-    const hasCPU = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('cpu') || 
-      item.category?.name?.toLowerCase().includes('processor')
-    )
-    
-    // Hide compatible products if no motherboard or CPU is selected
-    if (!hasMotherboard && !hasCPU) {
-      setShowCompatible(false)
-      setCompatibleProducts([])
-    }
-  }, [selectedProducts])
+
 
   const fetchProducts = async () => {
     try {
@@ -70,56 +54,7 @@ const CreateOrder = () => {
     return products.filter(product => product.category?._id === selectedCategory)
   }
 
-  const fetchCompatibleProducts = async (productId) => {
-    try {
-      console.log('Fetching compatible products for:', productId)
-      const selectedProduct = products.find(p => p._id === productId)
-      console.log('Selected product:', selectedProduct?.name, 'Category:', selectedProduct?.category?.name)
-      
-      const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${productId}/compatible`)
-      console.log('Backend API response status:', response.status)
-      console.log('Backend API response data:', response.data)
-      
-      let compatibleData = response.data.compatibleProducts || []
-      console.log('Raw compatible products from backend:', compatibleData.length)
-      
-      // Filter out products from categories already selected
-      const selectedCategories = selectedProducts.map(item => item.category?._id).filter(Boolean)
-      console.log('Already selected categories:', selectedCategories)
-      
-      compatibleData = compatibleData.filter(product => 
-        !selectedCategories.includes(product.category?._id)
-      )
-      
-      console.log('Compatible products after filtering:', compatibleData.length)
-      console.log('Compatible products details:', compatibleData.map(p => ({ name: p.name, category: p.category?.name })))
-      
-      setCompatibleProducts(compatibleData)
-      setShowCompatible(true)
-      if (compatibleData.length === 0) {
-        toast.info('No compatible products found')
-      } else {
-        console.log('Compatible products section should now be visible')
-        // Scroll to compatible products section after a short delay
-        setTimeout(() => {
-          const element = document.querySelector('.compatible-products-section')
-          if (element) {
-            element.scrollIntoView({ behavior: 'smooth', block: 'start' })
-            console.log('Scrolled to compatible products section')
-          } else {
-            console.log('Compatible products section element not found in DOM')
-          }
-        }, 100)
-      }
-    } catch (error) {
-      console.error('Error fetching compatible products:', error)
-      console.error('Error response status:', error.response?.status)
-      console.error('Error response data:', error.response?.data)
-      setCompatibleProducts([])
-      setShowCompatible(true)
-      toast.error('Failed to fetch compatible products')
-    }
-  }
+
 
 
 
@@ -135,28 +70,8 @@ const CreateOrder = () => {
       const newProducts = [...selectedProducts, { ...product, orderQuantity: quantity }]
       setSelectedProducts(newProducts)
     }
-    
-    // Auto-show compatible products if motherboard is added
-    if (product.category?.name?.toLowerCase().includes('motherboard')) {
-      fetchCompatibleProducts(product._id)
-      setTimeout(() => {
-        const element = document.querySelector('.compatible-products-section')
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' })
-        }
-      }, 500)
-    }
-    
-    // Auto-show compatible motherboards if CPU is added
-    if (product.category?.name?.toLowerCase().includes('cpu') || product.category?.name?.toLowerCase().includes('processor')) {
-      fetchCompatibleProducts(product._id)
-      setTimeout(() => {
-        const element = document.querySelector('.compatible-products-section')
-        if (element) {
-          element.scrollIntoView({ behavior: 'smooth' })
-        }
-      }, 500)
-    }
+
+
   }
 
   const removeFromOrder = (productId) => {
@@ -183,22 +98,22 @@ const CreateOrder = () => {
       toast.error('Customer name is required')
       return
     }
-    
+
     if (!customerInfo.email?.trim()) {
       toast.error('Customer email is required')
       return
     }
-    
+
     if (selectedProducts.length === 0) {
       toast.error('Please add at least one product to the order')
       return
     }
-    
+
     if (customerInfo.phone && customerInfo.phone.length !== 10) {
       toast.error('Phone number must be exactly 10 digits')
       return
     }
-    
+
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
     if (!emailRegex.test(customerInfo.email)) {
       toast.error('Please enter a valid email address')
@@ -206,10 +121,10 @@ const CreateOrder = () => {
     }
 
     // Validate products have valid data
-    const invalidProducts = selectedProducts.filter(item => 
+    const invalidProducts = selectedProducts.filter(item =>
       !item._id || !item.orderQuantity || item.orderQuantity <= 0 || !item.sellingRate
     )
-    
+
     if (invalidProducts.length > 0) {
       toast.error('Some products have invalid data. Please check quantities and prices.')
       return
@@ -233,7 +148,7 @@ const CreateOrder = () => {
       console.log('Creating order with data:', orderData)
       const response = await axios.post('https://computer-shop-backend-five.vercel.app/api/orders/create', orderData)
       console.log('Order created successfully:', response.data)
-      
+
       // Update stock for each product in the order
       for (const item of selectedProducts) {
         try {
@@ -256,7 +171,7 @@ const CreateOrder = () => {
           // Don't fail the entire order if stock update fails
         }
       }
-      
+
       toast.success('✅ Order created successfully!')
       // Clear form
       setSelectedProducts([])
@@ -268,7 +183,7 @@ const CreateOrder = () => {
     } catch (error) {
       console.error('Error creating order:', error)
       console.error('Error details:', error.response?.data)
-      
+
       // More specific error messages
       if (error.response?.status === 400) {
         toast.error(`Invalid order data: ${error.response.data.message || 'Please check all fields'}`)
@@ -289,7 +204,7 @@ const CreateOrder = () => {
           <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Create Order</h1>
           <p className="text-gray-600 text-sm sm:text-base">Take customer orders for computer parts</p>
         </div>
-        <button 
+        <button
           onClick={() => navigate('/orders')}
           className="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base font-medium shadow-sm"
         >
@@ -308,14 +223,14 @@ const CreateOrder = () => {
             type="text"
             placeholder="Customer Name *"
             value={customerInfo.name}
-            onChange={(e) => setCustomerInfo({...customerInfo, name: e.target.value})}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
             className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
           />
           <input
             type="email"
             placeholder="Email Address *"
             value={customerInfo.email}
-            onChange={(e) => setCustomerInfo({...customerInfo, email: e.target.value})}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
             className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
           />
           <input
@@ -324,7 +239,7 @@ const CreateOrder = () => {
             value={customerInfo.phone}
             onChange={(e) => {
               const value = e.target.value.replace(/\D/g, '').slice(0, 10)
-              setCustomerInfo({...customerInfo, phone: value})
+              setCustomerInfo({ ...customerInfo, phone: value })
             }}
             maxLength={10}
             pattern="[0-9]{10}"
@@ -334,7 +249,7 @@ const CreateOrder = () => {
             type="text"
             placeholder="Address (Optional)"
             value={customerInfo.address}
-            onChange={(e) => setCustomerInfo({...customerInfo, address: e.target.value})}
+            onChange={(e) => setCustomerInfo({ ...customerInfo, address: e.target.value })}
             className="px-3 py-2 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-100 text-sm transition-all duration-200"
           />
         </div>
@@ -360,45 +275,38 @@ const CreateOrder = () => {
                 </option>
               ))}
             </select>
-            {showCompatible && (
-              <button
-                onClick={() => setShowCompatible(false)}
-                className="w-full sm:w-auto px-4 py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg hover:from-gray-700 hover:to-gray-800 text-sm font-medium transition-all duration-200 shadow-sm"
-              >
-                🔄 Show All Products
-              </button>
-            )}
+
           </div>
         </div>
 
-          {/* Available Products Container - Mobile Card Layout */}
-          <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
-            {/* Desktop Table View */}
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="bg-white divide-y divide-gray-200">
-                  {getFilteredProducts().map((product, index) => {
-                    const isSelected = selectedProducts.some(item => item._id === product._id)
-                    return (
-                    <motion.tr 
-                      key={product._id} 
+        {/* Available Products Container - Mobile Card Layout */}
+        <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
+          {/* Desktop Table View */}
+          <div className="hidden md:block overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Brand</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stock</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {getFilteredProducts().map((product, index) => {
+                  const isSelected = selectedProducts.some(item => item._id === product._id)
+                  return (
+                    <motion.tr
+                      key={product._id}
                       className={`${isSelected ? 'bg-green-50' : ''}`}
                       initial={{ opacity: 0 }}
                       animate={{ opacity: 1 }}
                       transition={{ delay: index * 0.05 }}
                     >
                       <td className="px-4 py-3">
-                        <button 
+                        <button
                           onClick={() => { setSelectedProduct(product); setShowModal(true) }}
                           className="text-blue-600 hover:text-blue-800 hover:underline text-left"
                         >
@@ -430,133 +338,100 @@ const CreateOrder = () => {
                         </motion.button>
                       </td>
                     </motion.tr>
-                    )
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile List View */}
-            <div className="md:hidden">
-              {getFilteredProducts().map((product, index) => {
-                const isSelected = selectedProducts.some(item => item._id === product._id)
-                return (
-                  <motion.div 
-                    key={product._id} 
-                    className={`p-3 border-b border-gray-200 ${isSelected ? 'bg-green-50' : ''}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ delay: index * 0.02 }}
-                  >
-                    <div className="flex items-start justify-between mb-2">
-                      <div className="flex-1 min-w-0 mr-3">
-                        <button 
-                          onClick={() => { setSelectedProduct(product); setShowModal(true) }}
-                          className="text-blue-600 hover:text-blue-800 hover:underline text-left w-full"
-                        >
-                          <p className="font-medium text-sm truncate">{product.name}</p>
-                          <p className="text-xs text-gray-500 mt-0.5">{product.category?.name} • {formatIndianCurrency(product.sellingRate)}</p>
-                        </button>
-                      </div>
-                      
-                      <div className="flex items-center gap-2">
-                        <span className="text-xs text-gray-500">{product.quantity}</span>
-                        <motion.button
-                          onClick={() => addToOrder(product)}
-                          disabled={product.quantity === 0}
-                          className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
-                          whileHover={{ scale: product.quantity === 0 ? 1 : 1.05 }}
-                          whileTap={{ scale: product.quantity === 0 ? 1 : 0.95 }}
-                        >
-                          {product.quantity === 0 ? 'Out' : 'Add'}
-                        </motion.button>
-                      </div>
-                    </div>
-                    
-                    {product.attributes && Object.keys(product.attributes).length > 0 && (
-                      <div className="flex flex-wrap gap-1">
-                        {Object.entries(product.attributes).slice(0, 3).map(([key, value]) => (
-                          <span key={key} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
-                            {key}: {value}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </motion.div>
-                )
-              })}
-            </div>
-
-            {getFilteredProducts().length === 0 && (
-              <div className="text-center py-16">
-                <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
-                  <span className="text-3xl text-gray-400">📦</span>
-                </div>
-                <p className="text-gray-500 text-lg">No products available</p>
-                <p className="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
-              </div>
-            )}
+                  )
+                })}
+              </tbody>
+            </table>
           </div>
 
-          {/* Compatible Products Container - Mobile Friendly */}
-          {showCompatible && compatibleProducts.length > 0 && (
-            <div className="compatible-products-section bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl shadow-lg mb-6">
-              <h3 className="text-xl font-bold text-blue-900 p-6 border-b border-blue-200 flex items-center">
-                <span className="w-2 h-2 bg-blue-500 rounded-full mr-3"></span>
-                🔗 Compatible Products
-              </h3>
-              <div className="p-4">
-                {Object.entries(
-                  compatibleProducts.reduce((acc, product) => {
-                    const categoryName = product.category?.name || 'Uncategorized'
-                    if (!acc[categoryName]) acc[categoryName] = []
-                    acc[categoryName].push(product)
-                    return acc
-                  }, {})
-                ).map(([categoryName, products]) => (
-                  <div key={categoryName} className="mb-6">
-                    <h4 className="font-semibold text-gray-700 text-sm mb-3 border-b pb-2">{categoryName}</h4>
-                    <div className="space-y-3">
-                      {products.map((product) => (
-                        <div key={product._id} className="flex flex-col sm:flex-row justify-between items-start sm:items-center p-4 bg-white border border-blue-200 rounded-xl hover:shadow-md hover:border-blue-300 transition-all duration-200">
-                          <div className="flex-1 mb-3 sm:mb-0">
-                            <p className="font-semibold text-sm text-gray-900">{product.name}</p>
-                            <p className="text-xs text-gray-600 mt-1">{product.brand || 'N/A'} • {formatIndianCurrency(product.sellingRate)} • Stock: {product.quantity}</p>
-                          </div>
-                          <button
-                            onClick={() => addToOrder(product)}
-                            disabled={product.quantity === 0}
-                            className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
-                          >
-                            {product.quantity === 0 ? '❌ Out of Stock' : '➕ Add'}
-                          </button>
-                        </div>
-                      ))}
+          {/* Mobile List View */}
+          <div className="md:hidden">
+            {getFilteredProducts().map((product, index) => {
+              const isSelected = selectedProducts.some(item => item._id === product._id)
+              return (
+                <motion.div
+                  key={product._id}
+                  className={`p-3 border-b border-gray-200 ${isSelected ? 'bg-green-50' : ''}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ delay: index * 0.02 }}
+                >
+                  <div className="flex items-start justify-between mb-2">
+                    <div className="flex-1 min-w-0 mr-3">
+                      <button
+                        onClick={() => { setSelectedProduct(product); setShowModal(true) }}
+                        className="text-blue-600 hover:text-blue-800 hover:underline text-left w-full"
+                      >
+                        <p className="font-medium text-sm truncate">{product.name}</p>
+                        <p className="text-xs text-gray-500 mt-0.5">{product.category?.name} • {formatIndianCurrency(product.sellingRate)}</p>
+                      </button>
+                    </div>
+
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500">{product.quantity}</span>
+                      <motion.button
+                        onClick={() => addToOrder(product)}
+                        disabled={product.quantity === 0}
+                        className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                        whileHover={{ scale: product.quantity === 0 ? 1 : 1.05 }}
+                        whileTap={{ scale: product.quantity === 0 ? 1 : 0.95 }}
+                      >
+                        {product.quantity === 0 ? 'Out' : 'Add'}
+                      </motion.button>
                     </div>
                   </div>
-                ))}
+
+                  {product.attributes && Object.keys(product.attributes).length > 0 && (
+                    <div className="flex flex-wrap gap-1">
+                      {Object.entries(product.attributes).slice(0, 3).map(([key, value]) => (
+                        <span key={key} className="px-2 py-1 bg-blue-100 text-blue-800 text-xs rounded-full">
+                          {key}: {value}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </motion.div>
+              )
+            })}
+          </div>
+
+          {getFilteredProducts().length === 0 && (
+            <div className="text-center py-16">
+              <div className="w-20 h-20 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                <span className="text-3xl text-gray-400">📦</span>
               </div>
+              <p className="text-gray-500 text-lg">No products available</p>
+              <p className="text-gray-400 text-sm mt-1">Try adjusting your filters</p>
             </div>
           )}
+        </div>
+
+        {/* Compatibility Check Component */}
+        <CompatibilityCheck 
+          selectedProducts={selectedProducts} 
+          onAddProduct={addToOrder}
+          categories={categories}
+          products={products}
+        />
       </div>
 
       {/* Cart Modal */}
       {showCartModal && (
-        <div className="fixed inset-0 bg-transparent flex items-start justify-end z-50 p-4" style={{backdropFilter: 'blur(2px)'}}>
+        <div className="fixed inset-0 bg-transparent flex items-start justify-end z-50 p-4" style={{ backdropFilter: 'blur(2px)' }}>
           <div className="bg-white rounded-2xl p-6 max-w-md w-full sm:w-96 h-[calc(100vh-8rem)] overflow-y-auto shadow-2xl mt-16 mr-4">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
                 Order Summary
               </h3>
-              <button 
+              <button
                 onClick={() => setShowCartModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-3xl transition-colors duration-200"
               >
                 ×
               </button>
             </div>
-            
+
             {selectedProducts.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -592,7 +467,7 @@ const CreateOrder = () => {
                     </div>
                   ))}
                 </div>
-                
+
                 <div className="border-t-2 border-gray-200 pt-4">
                   <div className="bg-gradient-to-r from-green-50 to-emerald-50 p-4 rounded-lg mb-4">
                     <div className="flex justify-between items-center">
@@ -600,7 +475,7 @@ const CreateOrder = () => {
                       <span className="text-2xl font-bold text-green-600">{formatIndianCurrency(getTotalAmount())}</span>
                     </div>
                   </div>
-                  
+
                   <div className="flex flex-col sm:flex-row gap-3">
                     <motion.button
                       onClick={() => {
@@ -621,22 +496,22 @@ const CreateOrder = () => {
                           toast.error('Customer name is required for quotation')
                           return
                         }
-                        
+
                         if (!customerInfo.email?.trim()) {
                           toast.error('Customer email is required for quotation')
                           return
                         }
-                        
+
                         if (selectedProducts.length === 0) {
                           toast.error('Please add at least one product to generate quotation')
                           return
                         }
-                        
+
                         if (customerInfo.phone && customerInfo.phone.length !== 10) {
                           toast.error('Phone number must be exactly 10 digits')
                           return
                         }
-                        
+
                         const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
                         if (!emailRegex.test(customerInfo.email)) {
                           toast.error('Please enter a valid email address')
@@ -669,7 +544,7 @@ const CreateOrder = () => {
                         } catch (error) {
                           console.error('Error generating quotation:', error)
                           console.error('Error details:', error.response?.data)
-                          
+
                           // More specific error messages
                           if (error.response?.status === 400) {
                             toast.error(`Invalid quotation data: ${error.response.data.message || 'Please check all fields'}`)
@@ -703,14 +578,14 @@ const CreateOrder = () => {
           <div className="bg-white rounded-2xl p-6 sm:p-8 max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
             <div className="flex justify-between items-start mb-6">
               <h3 className="text-xl sm:text-2xl font-bold text-gray-900 pr-4">{selectedProduct.name}</h3>
-              <button 
+              <button
                 onClick={() => setShowModal(false)}
                 className="text-gray-400 hover:text-gray-600 text-3xl flex-shrink-0 transition-colors duration-200"
               >
                 ×
               </button>
             </div>
-            
+
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <div className="space-y-3">
                 <p className="text-sm text-gray-600"><strong>Category:</strong> {selectedProduct.category?.name || 'N/A'}</p>
@@ -720,19 +595,18 @@ const CreateOrder = () => {
               </div>
               <div className="space-y-3">
                 <p className="text-sm text-gray-600"><strong>Stock:</strong> {selectedProduct.quantity}</p>
-                <p className="text-sm text-gray-600"><strong>Status:</strong> 
-                  <span className={`ml-1 px-2 py-1 rounded text-xs ${
-                    selectedProduct.status === 'Active' ? 'bg-green-100 text-green-800' :
-                    selectedProduct.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
-                    'bg-red-100 text-red-800'
-                  }`}>
+                <p className="text-sm text-gray-600"><strong>Status:</strong>
+                  <span className={`ml-1 px-2 py-1 rounded text-xs ${selectedProduct.status === 'Active' ? 'bg-green-100 text-green-800' :
+                      selectedProduct.status === 'Inactive' ? 'bg-gray-100 text-gray-800' :
+                        'bg-red-100 text-red-800'
+                    }`}>
                     {selectedProduct.status}
                   </span>
                 </p>
                 <p className="text-sm text-gray-600"><strong>Warranty:</strong> {selectedProduct.warranty || 'N/A'}</p>
               </div>
             </div>
-            
+
             {selectedProduct.attributes && Object.keys(selectedProduct.attributes).length > 0 && (
               <div className="mt-6">
                 <h4 className="text-sm font-medium text-gray-700 mb-3">Attributes:</h4>
@@ -745,7 +619,7 @@ const CreateOrder = () => {
                 </div>
               </div>
             )}
-            
+
             <div className="mt-8 flex flex-col sm:flex-row gap-4">
               <button
                 onClick={() => { addToOrder(selectedProduct); setShowModal(false) }}
@@ -790,7 +664,7 @@ const CreateOrder = () => {
               <button
                 onClick={() => {
                   const updatedProducts = selectedProducts.map(item =>
-                    item._id === pendingProduct.product._id 
+                    item._id === pendingProduct.product._id
                       ? { ...item, orderQuantity: item.orderQuantity + pendingProduct.quantity }
                       : item
                   )

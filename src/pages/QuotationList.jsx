@@ -10,8 +10,9 @@ const QuotationList = () => {
   const navigate = useNavigate()
   const [quotations, setQuotations] = useState([])
   const [loading, setLoading] = useState(true)
-
   const [searchTerm, setSearchTerm] = useState('')
+  const [showDeleteModal, setShowDeleteModal] = useState(false)
+  const [quotationToDelete, setQuotationToDelete] = useState(null)
 
 
   useEffect(() => {
@@ -48,16 +49,18 @@ const QuotationList = () => {
     fetchQuotations(value)
   }
 
-  const handleDeleteQuotation = async (quotationId) => {
-    if (!confirm('Are you sure you want to delete this quotation?')) return
-    
+  const handleDeleteQuotation = async () => {
     try {
-      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/${quotationId}`)
+      await axios.delete(`https://computer-shop-backend-five.vercel.app/api/orders/quotations/${quotationToDelete}`)
       toast.success('Quotation deleted successfully!')
       fetchQuotations(searchTerm)
+      setShowDeleteModal(false)
+      setQuotationToDelete(null)
     } catch (error) {
       console.error('Error deleting quotation:', error)
       toast.error('Failed to delete quotation. Please try again.')
+      setShowDeleteModal(false)
+      setQuotationToDelete(null)
     }
   }
 
@@ -246,7 +249,7 @@ const QuotationList = () => {
                 Edit
               </button>
               <button 
-                onClick={() => handleDeleteQuotation(quotation._id)}
+                onClick={() => { setQuotationToDelete(quotation._id); setShowDeleteModal(true); }}
                 className="px-3 py-2 bg-rose-50 text-rose-600 text-sm font-medium rounded-lg hover:bg-rose-100"
               >
                 Delete
@@ -336,7 +339,7 @@ const QuotationList = () => {
                         Edit
                       </button>
                       <button 
-                        onClick={() => handleDeleteQuotation(quotation._id)}
+                        onClick={() => { setQuotationToDelete(quotation._id); setShowDeleteModal(true); }}
                         className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg hover:bg-rose-100"
                       >
                         Delete
@@ -365,6 +368,31 @@ const QuotationList = () => {
       </div>
 
 
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Delete Quotation</h3>
+            <p className="text-gray-600 mb-6">
+              Are you sure you want to delete this quotation? This action cannot be undone.
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => { setShowDeleteModal(false); setQuotationToDelete(null); }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDeleteQuotation}
+                className="flex-1 px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 font-medium"
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

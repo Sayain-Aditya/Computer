@@ -7,6 +7,8 @@ import axios from 'axios'
 const AddProduct = () => {
   const navigate = useNavigate()
   const [categories, setCategories] = useState([])
+  const [categoryAttributes, setCategoryAttributes] = useState([])
+  const [backendAttributes, setBackendAttributes] = useState([])
   const [formData, setFormData] = useState({
     name: '',
     category: '',
@@ -32,6 +34,42 @@ const AddProduct = () => {
     } catch (error) {
       console.error('Error fetching categories:', error)
     }
+  }
+
+  const fetchCategoryAttributes = async (categoryId) => {
+    try {
+      const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/attributes/category/${categoryId}/attributes`)
+      
+      if (response.data && response.data.attributes) {
+        const fetchedAttrs = Object.keys(response.data.attributes)
+        setBackendAttributes(fetchedAttrs)
+        
+        // Add fetched attributes directly to formData.attributes
+        setFormData(prev => ({
+          ...prev,
+          attributes: {
+            ...prev.attributes,
+            ...response.data.attributes
+          }
+        }))
+      }
+      setCategoryAttributes([])
+    } catch (error) {
+      console.error('Error fetching category attributes:', error)
+      setCategoryAttributes([])
+    }
+  }
+
+  const handleCategoryChange = (categoryId) => {
+    console.log('Category changed to:', categoryId)
+    setFormData({ ...formData, category: categoryId, attributes: {} })
+    setBackendAttributes([])
+    if (categoryId) {
+      fetchCategoryAttributes(categoryId)
+    } else {
+      setCategoryAttributes([])
+    }
+    setNewAttribute({ key: '', value: '' })
   }
 
   const handleSubmit = async (e) => {
@@ -110,7 +148,7 @@ const AddProduct = () => {
             <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
             <select
               value={formData.category}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               required
               className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
             >
@@ -203,8 +241,12 @@ const AddProduct = () => {
             />
           </div>
 
+
+
           <div className="md:col-span-2">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Product Attributes</h4>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Attributes</h4>
+            
+
             
             <div className="flex flex-col sm:flex-row gap-2 mb-3">
               <input
@@ -231,20 +273,38 @@ const AddProduct = () => {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-              {Object.entries(formData.attributes).map(([key, value]) => (
-                <div key={key} className="flex items-center justify-between p-2 bg-gray-50 border border-gray-200 rounded">
-                  <span className="text-sm truncate mr-2">
-                    <strong>{key}:</strong> {value}
-                  </span>
-                  <button
-                    type="button"
-                    onClick={() => removeAttribute(key)}
-                    className="text-red-600 hover:text-red-800 text-sm whitespace-nowrap"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+              {Object.entries(formData.attributes).map(([key, value]) => {
+                const isBackendAttribute = backendAttributes.includes(key)
+                return (
+                  <div key={key} className="flex items-center gap-2 p-2 bg-gray-50 border border-gray-200 rounded">
+                    <div className="flex-1">
+                      <label className="block text-xs font-medium text-gray-600 mb-1">{key}</label>
+                      <input
+                        type="text"
+                        value={value}
+                        onChange={(e) => setFormData({
+                          ...formData,
+                          attributes: {
+                            ...formData.attributes,
+                            [key]: e.target.value
+                          }
+                        })}
+                        className="w-full px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                        placeholder={`Enter ${key.toLowerCase()}`}
+                      />
+                    </div>
+                    {!isBackendAttribute && (
+                      <button
+                        type="button"
+                        onClick={() => removeAttribute(key)}
+                        className="text-red-600 hover:text-red-800 text-xs whitespace-nowrap mt-4"
+                      >
+                        Remove
+                      </button>
+                    )}
+                  </div>
+                )
+              })}
             </div>
           </div>
 

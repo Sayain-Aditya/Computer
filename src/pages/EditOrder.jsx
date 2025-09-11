@@ -26,6 +26,7 @@ const EditOrder = () => {
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingProduct, setPendingProduct] = useState(null)
   const [loading, setLoading] = useState(true)
+  const [orderType, setOrderType] = useState('Order')
 
   useEffect(() => {
     fetchOrder()
@@ -34,19 +35,39 @@ const EditOrder = () => {
   }, [id])
 
   useEffect(() => {
-    const hasMotherboard = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('motherboard')
-    )
-    const hasCPU = selectedProducts.some(item => 
-      item.category?.name?.toLowerCase().includes('cpu') || 
-      item.category?.name?.toLowerCase().includes('processor')
-    )
-    
-    if (!hasMotherboard && !hasCPU) {
+    fetchCompatibleProducts()
+  }, [selectedProducts])
+
+  const fetchCompatibleProducts = async () => {
+    if (selectedProducts.length === 0) {
       setShowCompatible(false)
       setCompatibleProducts([])
+      return
     }
-  }, [selectedProducts])
+
+    try {
+      const compatibleProductsSet = new Set()
+      
+      for (const product of selectedProducts) {
+        const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${product._id}/compatible`)
+        if (response.data && response.data.length > 0) {
+          response.data.forEach(compatibleProduct => {
+            if (!selectedProducts.some(selected => selected._id === compatibleProduct._id)) {
+              compatibleProductsSet.add(JSON.stringify(compatibleProduct))
+            }
+          })
+        }
+      }
+      
+      const uniqueCompatibleProducts = Array.from(compatibleProductsSet).map(item => JSON.parse(item))
+      setCompatibleProducts(uniqueCompatibleProducts)
+      setShowCompatible(uniqueCompatibleProducts.length > 0)
+    } catch (error) {
+      console.error('Error fetching compatible products:', error)
+      setCompatibleProducts([])
+      setShowCompatible(false)
+    }
+  }
 
   const fetchOrder = async () => {
     try {
@@ -59,6 +80,7 @@ const EditOrder = () => {
       const allProducts = productsResponse.data
       
       if (order) {
+        setOrderType(order.type || 'Order')
         setCustomerInfo({
           name: order.customerName,
           email: order.customerEmail,
@@ -188,7 +210,7 @@ const EditOrder = () => {
         price: item.sellingRate
       })),
       totalAmount: getTotalAmount(),
-      type: "Order"
+      type: orderType
     }
 
     try {
@@ -196,8 +218,8 @@ const EditOrder = () => {
       
       // Backend handles all stock updates automatically
       
-      toast.success('Order updated successfully!')
-      navigate('/orders')
+      toast.success(`${orderType} updated successfully!`)
+      navigate(orderType === 'Quotation' ? '/quotation-list' : '/orders')
     } catch (error) {
       console.error('Error updating order:', error)
       toast.error('Failed to update order. Please try again.')
@@ -212,14 +234,14 @@ const EditOrder = () => {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-3 sm:p-6">
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-white rounded-xl shadow-sm p-4 sm:p-6">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Edit Order</h1>
-          <p className="text-gray-600 text-sm sm:text-base">Update order details</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-1">Edit {orderType}</h1>
+          <p className="text-gray-600 text-sm sm:text-base">Update {orderType.toLowerCase()} details</p>
         </div>
         <button 
-          onClick={() => navigate('/orders')}
+          onClick={() => navigate(orderType === 'Quotation' ? '/quotation-list' : '/orders')}
           className="w-full sm:w-auto px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors duration-200 text-sm sm:text-base font-medium shadow-sm"
         >
-          ← Back to Orders
+          ← Back to {orderType === 'Quotation' ? 'Quotations' : 'Orders'}
         </button>
       </div>
 
@@ -288,6 +310,30 @@ const EditOrder = () => {
             </select>
           </div>
         </div>
+
+        {showCompatible && compatibleProducts.length > 0 && (
+          <div className="mb-6 bg-gradient-to-r from-green-50 to-emerald-50 rounded-xl shadow-sm p-4 sm:p-6 border border-green-200">
+            <h3 className="text-lg font-bold text-green-800 mb-4 flex items-center">
+              <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
+              Compatible Products
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+              {compatibleProducts.slice(0, 6).map(product => (
+                <div key={product._id} className="bg-white p-3 rounded-lg border border-green-200 hover:shadow-md transition-all duration-200">
+                  <p className="font-medium text-sm text-gray-900 truncate">{product.name}</p>
+                  <p className="text-xs text-gray-600 mt-1">{product.category?.name} • ₹{product.sellingRate}</p>
+                  <button
+                    onClick={() => addToOrder(product)}
+                    disabled={product.quantity === 0}
+                    className="mt-2 w-full px-3 py-1.5 bg-green-600 text-white text-xs rounded hover:bg-green-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {product.quantity === 0 ? 'Out of Stock' : 'Add Compatible'}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="bg-white border border-gray-200 rounded-xl shadow-lg mb-6 overflow-hidden">
           <div className="hidden md:block overflow-x-auto">
@@ -423,7 +469,7 @@ const EditOrder = () => {
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
                 <span className="w-2 h-2 bg-green-500 rounded-full mr-3"></span>
-                Order Summary
+                {orderType} Summary
               </h3>
               <button 
                 onClick={() => setShowCartModal(false)}
@@ -487,7 +533,7 @@ const EditOrder = () => {
                     whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
                     whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
                   >
-                    🔄 Update Order
+                    🔄 Update {orderType}
                   </motion.button>
                 </div>
               </>
@@ -585,7 +631,7 @@ const EditOrder = () => {
         disabled={selectedProducts.length === 0}
         className="fixed bottom-6 right-6 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200 z-30"
       >
-        🔄 Update Order
+        🔄 Update {orderType}
       </button>
     </div>
   )

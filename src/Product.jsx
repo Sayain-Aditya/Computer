@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import { formatIndianCurrency } from './utils/formatters'
 
 const Product = () => {
   const navigate = useNavigate()
@@ -33,14 +34,13 @@ const Product = () => {
     try {
       setLoading(true)
       let url
-      if (searchTerm) {
+      
+      if (selectedCategory) {
+        url = `https://computer-shop-backend-five.vercel.app/api/products/category/${selectedCategory}`
+      } else if (searchTerm) {
         url = `https://computer-shop-backend-five.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
       } else {
-        url = `https://computer-shop-backend-five.vercel.app/api/products/all?page=${page}`
-      }
-      
-      if (selectedCategory && !searchTerm) {
-        url += `&category=${selectedCategory}`
+        url = 'https://computer-shop-backend-five.vercel.app/api/products/all'
       }
       
       console.log('Fetching URL:', url)
@@ -221,7 +221,7 @@ const Product = () => {
                   </div>
                 )}
               </div>
-              <span className="text-lg font-bold text-gray-900">₹{product.sellingRate}</span>
+              <span className="text-lg font-bold text-gray-900">{formatIndianCurrency(product.sellingRate)}</span>
             </div>
             
             <div className="grid grid-cols-2 gap-3 mb-3 text-sm">
@@ -324,7 +324,7 @@ const Product = () => {
                   </td>
                   <td className="px-6 py-4 text-sm text-gray-600">{product.brand || 'N/A'}</td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">₹{product.sellingRate}</span>
+                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(product.sellingRate)}</span>
                   </td>
                   <td className="px-6 py-4">
                     <span className={`text-sm font-medium ${

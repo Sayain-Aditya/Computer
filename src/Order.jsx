@@ -397,9 +397,9 @@ const Order = () => {
               <tr>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Order ID</th>
                 <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Email</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Phone</th>
+                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Address</th>
                 {/* <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th> */}
               </tr>
             </thead>
@@ -413,21 +413,16 @@ const Order = () => {
                     <div className="text-sm font-medium text-gray-800">{order.orderId || `#${order._id?.slice(-6)}`}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">{order.customerName}</div>
-                      <div className="text-xs text-gray-500">{order.customerEmail}</div>
-                    </div>
+                    <div className="text-sm font-medium text-gray-800">{order.customerName}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
-                      {order.items?.length || 0} items
-                    </span>
+                    <div className="text-sm text-gray-600">{order.customerEmail}</div>
                   </td>
                   <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(order.totalAmount || 0)}</span>
+                    <div className="text-sm text-gray-600">{order.customerPhone || 'N/A'}</div>
                   </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(order.createdAt).toLocaleDateString()}
+                  <td className="px-6 py-4">
+                    <div className="text-sm text-gray-600">{order.address || 'N/A'}</div>
                   </td>
                   {/* <td className="px-6 py-4">
                     <div className="flex gap-2">

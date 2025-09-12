@@ -12,8 +12,6 @@ const SharedQuotation = () => {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
 
-
-
   useEffect(() => {
     // Validate ID format
     if (!id || id.length !== 24 || !/^[0-9a-fA-F]{24}$/.test(id)) {
@@ -64,7 +62,8 @@ const SharedQuotation = () => {
           products: productsWithNames,
           totalAmount: quotation.totalAmount || 0,
           createdAt: quotation.createdAt,
-          quoteId: quotation.quoteId || `QT-${quotation._id?.slice(-6)}`
+          quoteId: quotation.quoteId || `QT-${quotation._id?.slice(-6)}`,
+          status: quotation.status || 'Pending'
         })
       } catch (error) {
         console.error('Error fetching quotation:', error)
@@ -132,118 +131,110 @@ const SharedQuotation = () => {
         </button>
       </div>
 
-      <div className="print-content p-4 bg-white" style={{minHeight: '100vh'}}>
-        <div className="text-center mb-8 sm:mb-12">
-          <h1 className="text-2xl sm:text-4xl font-bold text-gray-800 mb-2">QUOTATION</h1>
-          <p className="text-lg sm:text-xl text-gray-600">Computer Shop</p>
-          <hr className="w-24 sm:w-32 mx-auto mt-4 border-gray-300" />
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6 md:gap-12 mb-6 sm:mb-8 md:mb-12">
-          <div>
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Bill To:</h3>
-            <div className="text-gray-700 space-y-1 text-sm sm:text-base">
-              <p className="font-semibold text-base sm:text-lg">{quotationData.customer.name}</p>
-              <p>{quotationData.customer.email}</p>
-              <p>{quotationData.customer.phone}</p>
-              <p>{quotationData.customer.address}</p>
+      <div className="print-content p-4 sm:p-6 lg:p-8 mt-16 sm:mt-20">
+        {/* Simple Invoice Header */}
+        <div className="p-6 mb-0 border-b-2 border-blue-800">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 text-gray-800">INVOICE</h1>
+              <h2 className="text-xl font-semibold text-gray-700 mb-1">Mittal Computers</h2>
+              <p className="text-gray-600 text-sm">1st Floor Pushpanjali Complex, Near Shahi Market,<br />Cinema Road, Shahi Market-273001</p>
             </div>
-          </div>
-          <div className="md:text-right">
-            <h3 className="text-lg sm:text-xl font-bold text-gray-800 mb-3 sm:mb-4 border-b-2 border-gray-200 pb-2">Quote Details:</h3>
-            <div className="text-gray-700 space-y-1 text-sm sm:text-base">
-              <p><span className="font-medium">Date:</span> {new Date(quotationData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Quote #:</span> {quotationData.quoteId}</p>
+            <div className="flex flex-col items-center">
+              <img src="/logo.jpg" alt="Company Logo" className="w-24 h-24 mb-2" />
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Invoice #</p>
+                <p className="text-xl font-bold text-gray-800">{quotationData.quoteId}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mb-8 sm:mb-12">
-          <div className="overflow-x-auto">
-            <table className="w-full border-collapse border-2 border-gray-400 min-w-[320px] sm:min-w-[500px]">
-            <thead>
-              <tr>
-                <th className="border-2 border-gray-400 px-2 sm:px-6 py-2 sm:py-4 text-left text-white bg-blue-900 font-bold text-xs sm:text-base">Item Description</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-6 py-2 sm:py-4 text-center text-white bg-blue-900 font-bold text-xs sm:text-base">Qty</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-6 py-2 sm:py-4 text-right text-white bg-blue-900 font-bold text-xs sm:text-base">Unit Price</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-6 py-2 sm:py-4 text-right text-white bg-blue-900 font-bold text-xs sm:text-base">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotationData.products.map((item, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="border border-gray-300 px-2 sm:px-6 py-2 sm:py-4">
-                    <div>
-                      <p className="font-semibold text-gray-800 text-xs sm:text-base">{item.name}</p>
-                      {item.description && <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>}
-                      {item.category && <p className="text-xs text-gray-500">{item.category}</p>}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-right font-medium">₹{formatIndianNumber(item.sellingRate)}</td>
-                  <td className="border border-gray-300 px-6 py-4 text-right font-bold">₹{formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}</td>
+        {/* Invoice Body */}
+        <div className="bg-white p-6">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">Bill To:</h3>
+              <div className="text-gray-700 space-y-1">
+                <p><span className="font-medium">Name:</span> <span className="font-semibold">{quotationData.customer.name}</span></p>
+                <p><span className="font-medium">Email:</span> {quotationData.customer.email}</p>
+                <p><span className="font-medium">Phone:</span> {quotationData.customer.phone}</p>
+                <p><span className="font-medium">Address:</span> {quotationData.customer.address}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="space-y-2">
+                <p><span className="font-medium text-gray-600">Date:</span> <span className="font-semibold">{new Date(quotationData.createdAt).toLocaleDateString()}</span></p>
+                <p><span className="font-medium text-gray-600">Status:</span> <span className={`px-2 py-1 rounded text-sm font-medium ${
+                  quotationData.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                }`}>{quotationData.status}</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr>
+                  <th className="bg-blue-800 px-6 py-4 text-left text-white font-bold border border-gray-300">Item Description</th>
+                  <th className="bg-blue-800 px-6 py-4 text-center text-white font-bold border border-gray-300">Qty</th>
+                  <th className="bg-blue-800 px-6 py-4 text-right text-white font-bold border border-gray-300">Unit Price</th>
+                  <th className="bg-blue-800 px-6 py-4 text-right text-white font-bold border border-gray-300">Total</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {quotationData.products.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-300 px-6 py-4">
+                      <p className="font-semibold text-gray-800">{item.name}</p>
+                      {item.description && item.description !== 'N/A' && item.description.trim() && (
+                        <p className="text-sm text-gray-600">{item.description}</p>
+                      )}
+                      {item.category && <p className="text-xs text-gray-500">{item.category}</p>}
+                    </td>
+                    <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-right font-medium">₹{formatIndianNumber(item.sellingRate)}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-right font-bold">₹{formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          <div className="flex justify-end mb-8">
+            <table className="w-80 border-collapse border border-gray-300">
+              <tbody>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Subtotal:</td>
+                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Tax (0%):</td>
+                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">₹0.00</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 bg-blue-800 text-white font-bold text-lg">TOTAL:</td>
+                  <td className="border border-gray-300 px-4 py-3 bg-blue-800 text-white text-right font-bold text-lg">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="flex justify-center md:justify-end mb-6 sm:mb-8 md:mb-12">
-          <div className="w-full max-w-80 bg-gray-50 p-3 sm:p-4 md:p-6 rounded-lg border-2 border-gray-300">
-            <div className="flex justify-between py-2 sm:py-3 border-b border-gray-300 text-sm sm:text-lg">
-              <span className="font-medium">Subtotal:</span>
-              <span className="font-semibold">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</span>
-            </div>
-            <div className="flex justify-between py-2 sm:py-3 border-b border-gray-300 text-sm sm:text-lg">
-              <span className="font-medium">Tax (0%):</span>
-              <span className="font-semibold">₹0.00</span>
-            </div>
-            <div className="flex justify-between py-3 sm:py-4 font-bold text-lg sm:text-2xl text-gray-800 border-t-2 border-gray-400 mt-2">
-              <span>TOTAL:</span>
-              <span>₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</span>
-            </div>
-          </div>
-        </div>
-
-        <div className="text-center border-t-2 border-gray-300 pt-6 sm:pt-8">
-          <p className="text-base sm:text-lg font-medium text-gray-700 mb-2">Thank you for your business!</p>
-          <p className="text-sm sm:text-base text-gray-600">This quotation is valid for 30 days from the date of issue.</p>
+        {/* Simple Invoice Footer */}
+        <div className="p-6 text-center border-t-2 border-blue-800">
+          <p className="text-lg font-medium mb-2 text-gray-800">Thank you for your business!</p>
+          <p className="text-gray-600">This quotation is valid for 30 days from the date of issue.</p>
         </div>
       </div>
 
       <style jsx global>{`
         @media print {
-          @page {
-            margin: 0;
-            size: A4;
-          }
-          body * {
-            visibility: hidden;
-          }
-          .print-content, .print-content * {
-            visibility: visible;
-          }
-          .print-content {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            padding: 20px;
-            box-sizing: border-box;
-          }
-          .no-print {
-            display: none !important;
-          }
-          body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: white !important;
-          }
-          * {
-            -webkit-print-color-adjust: exact !important;
-            color-adjust: exact !important;
-          }
+          @page { margin: 0; size: A4; }
+          body * { visibility: hidden; }
+          .print-content, .print-content * { visibility: visible; }
+          .print-content { position: absolute; left: 0; top: 0; width: 100%; padding: 20px; }
+          .no-print { display: none !important; }
         }
       `}</style>
     </div>

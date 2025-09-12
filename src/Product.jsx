@@ -30,17 +30,29 @@ const Product = () => {
     return () => clearTimeout(delayedSearch)
   }, [searchTerm, selectedCategory])
 
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      fetchProducts(1)
+    }, 500)
+    return () => clearTimeout(delayedSearch)
+  }, [searchTerm, selectedCategory])
+
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true)
-      let url
+      let url = 'https://computer-shop-backend-five.vercel.app/api/products/all'
+      const params = new URLSearchParams()
       
       if (selectedCategory) {
-        url = `https://computer-shop-backend-five.vercel.app/api/products/category/${selectedCategory}`
-      } else if (searchTerm) {
-        url = `https://computer-shop-backend-five.vercel.app/api/products/search?search=${encodeURIComponent(searchTerm)}`
-      } else {
-        url = 'https://computer-shop-backend-five.vercel.app/api/products/all'
+        params.append('category', selectedCategory)
+      }
+      
+      if (searchTerm) {
+        params.append('search', searchTerm)
+      }
+      
+      if (params.toString()) {
+        url += '?' + params.toString()
       }
       
       console.log('Fetching URL:', url)

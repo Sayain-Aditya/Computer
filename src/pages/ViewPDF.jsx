@@ -50,7 +50,9 @@ const ViewPDF = () => {
           },
           products: productsWithNames,
           totalAmount: quotation.totalAmount || 0,
-          createdAt: quotation.createdAt
+          createdAt: quotation.createdAt,
+          quoteId: quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A',
+          status: quotation.status || 'Pending'
         })
       } catch (error) {
         console.error('Error fetching quotation:', error)
@@ -79,6 +81,15 @@ const ViewPDF = () => {
         {/* Action Buttons - Responsive layout */}
         <div className="fixed top-4 right-4 z-50 flex flex-col sm:flex-row gap-2 lg:gap-3">
           <button 
+            onClick={() => navigate('/quotation-list')}
+            className="group px-3 py-2 lg:px-4 lg:py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg lg:rounded-xl hover:from-gray-700 hover:to-gray-800 shadow-lg lg:shadow-xl hover:shadow-xl lg:hover:shadow-2xl transform hover:scale-105 transition-all duration-300 flex items-center gap-1 lg:gap-2 font-medium text-sm lg:text-base"
+          >
+            <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+            </svg>
+            <span className="hidden sm:inline">Back</span>
+          </button>
+          <button 
             onClick={() => {
               const shareableUrl = `${window.location.origin}/shared-quotation/${id}`
               const message = `Computer Shop Quotation\n\nCustomer: ${quotationData.customer.name}\nTotal: ₹${quotationData.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
@@ -105,91 +116,101 @@ const ViewPDF = () => {
       </div>
 
       <div className="print-content p-4 sm:p-6 lg:p-8 mt-16 sm:mt-20">
-        <button 
-          onClick={() => navigate('/quotation-list')}
-          className="no-print mb-4 px-3 py-2 lg:px-4 lg:py-3 bg-gradient-to-r from-gray-600 to-gray-700 text-white rounded-lg lg:rounded-xl hover:from-gray-700 hover:to-gray-800 shadow-lg hover:shadow-xl transform hover:scale-105 transition-all duration-300 flex items-center gap-1 lg:gap-2 font-medium text-sm lg:text-base"
-        >
-          <svg className="w-4 h-4 lg:w-5 lg:h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-          <span className="hidden sm:inline">Back</span>
-        </button>
-        <div className="text-center mb-8 lg:mb-12">
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-bold text-gray-800 mb-2">QUOTATION</h1>
-          <p className="text-lg sm:text-xl text-gray-600">Computer Shop</p>
-          <hr className="w-24 sm:w-32 mx-auto mt-4 border-gray-300" />
-        </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-12 mb-8 lg:mb-12">
-          <div>
-            <h3 className="text-lg lg:text-xl font-bold text-gray-800 mb-3 lg:mb-4 border-b-2 border-gray-200 pb-2">Bill To:</h3>
-            <div className="text-gray-700 space-y-1">
-              <p className="font-semibold text-base lg:text-lg">{quotationData.customer.name}</p>
-              <p>{quotationData.customer.email}</p>
-              <p>{quotationData.customer.phone}</p>
-              <p>{quotationData.customer.address}</p>
+        
+        {/* Simple Invoice Header */}
+        <div className="p-6 mb-0 border-b-2 border-blue-800">
+          <div className="flex justify-between items-center">
+            <div>
+              <h1 className="text-3xl font-bold mb-2 text-gray-800">INVOICE</h1>
+              <h2 className="text-xl font-semibold text-gray-700 mb-1">Mittal Computers</h2>
+              <p className="text-gray-600 text-sm">1st Floor Pushpanjali Complex, Near Shahi Market,<br />Cinema Road, Shahi Market-273001</p>
             </div>
-          </div>
-          <div className="lg:text-right">
-            <h3 className="text-lg lg:text-xl font-bold text-gray-800 mb-3 lg:mb-4 border-b-2 border-gray-200 pb-2">Quote Details:</h3>
-            <div className="text-gray-700 space-y-1">
-              <p><span className="font-medium">Date:</span> {new Date(quotationData.createdAt).toLocaleDateString()}</p>
-              <p><span className="font-medium">Quote #:</span> QT-{id?.slice(-6)}</p>
+            <div className="flex flex-col items-center">
+              <img src="/logo.jpg" alt="Company Logo" className="w-24 h-24 mb-2" />
+              <div className="text-center">
+                <p className="text-sm text-gray-600">Invoice #</p>
+                <p className="text-xl font-bold text-gray-800">{quotationData.quoteId}</p>
+              </div>
             </div>
           </div>
         </div>
 
-        <div className="mb-8 lg:mb-12">
-          <table className="w-full border-collapse border-2 border-gray-400">
-            <thead>
-              <tr>
-                <th className="border-2 border-gray-400 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-left text-white bg-blue-900 font-bold text-xs sm:text-sm lg:text-base">Item Description</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-center text-white bg-blue-900 font-bold text-xs sm:text-sm lg:text-base">Qty</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-right text-white bg-blue-900 font-bold text-xs sm:text-sm lg:text-base">Unit Price</th>
-                <th className="border-2 border-gray-400 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-right text-white bg-blue-900 font-bold text-xs sm:text-sm lg:text-base">Total</th>
-              </tr>
-            </thead>
-            <tbody>
-              {quotationData.products.map((item, index) => (
-                <tr key={index} className={index % 2 === 0 ? 'bg-gray-50' : 'bg-white'}>
-                  <td className="border border-gray-300 px-2 sm:px-4 lg:px-6 py-2 lg:py-4">
-                    <div>
-                      <p className="font-semibold text-gray-800 text-xs sm:text-sm lg:text-base">{item.name}</p>
+        {/* Invoice Body */}
+        <div className="bg-white p-6">
+          <div className="flex justify-between items-start mb-8">
+            <div>
+              <h3 className="text-lg font-bold text-gray-800 mb-3">Bill To:</h3>
+              <div className="text-gray-700 space-y-1">
+                <p><span className="font-medium">Name:</span> <span className="font-semibold">{quotationData.customer.name}</span></p>
+                <p><span className="font-medium">Email:</span> {quotationData.customer.email}</p>
+                <p><span className="font-medium">Phone:</span> {quotationData.customer.phone}</p>
+                <p><span className="font-medium">Address:</span> {quotationData.customer.address}</p>
+              </div>
+            </div>
+            <div className="text-right">
+              <div className="space-y-2">
+                <p><span className="font-medium text-gray-600">Date:</span> <span className="font-semibold">{new Date(quotationData.createdAt).toLocaleDateString()}</span></p>
+                <p><span className="font-medium text-gray-600">Status:</span> <span className={`px-2 py-1 rounded text-sm font-medium ${
+                  quotationData.status === 'Confirmed' ? 'bg-green-100 text-green-800' : 'bg-amber-100 text-amber-800'
+                }`}>{quotationData.status}</span></p>
+              </div>
+            </div>
+          </div>
+
+          <div className="mb-8">
+            <table className="w-full border-collapse border border-gray-300">
+              <thead>
+                <tr>
+                  <th className="bg-blue-800 px-6 py-4 text-left text-white font-bold border border-gray-300">Item Description</th>
+                  <th className="bg-blue-800 px-6 py-4 text-center text-white font-bold border border-gray-300">Qty</th>
+                  <th className="bg-blue-800 px-6 py-4 text-right text-white font-bold border border-gray-300">Unit Price</th>
+                  <th className="bg-blue-800 px-6 py-4 text-right text-white font-bold border border-gray-300">Total</th>
+                </tr>
+              </thead>
+              <tbody>
+                {quotationData.products.map((item, index) => (
+                  <tr key={index}>
+                    <td className="border border-gray-300 px-6 py-4">
+                      <p className="font-semibold text-gray-800">{item.name}</p>
                       {item.description && item.description !== 'N/A' && item.description.trim() && (
-                        <p className="text-xs sm:text-sm text-gray-600">{item.description}</p>
+                        <p className="text-sm text-gray-600">{item.description}</p>
                       )}
                       {item.category && <p className="text-xs text-gray-500">{item.category}</p>}
-                    </div>
-                  </td>
-                  <td className="border border-gray-300 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-center font-medium text-xs sm:text-sm lg:text-base">{item.orderQuantity}</td>
-                  <td className="border border-gray-300 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-right font-medium text-xs sm:text-sm lg:text-base">₹{formatIndianNumber(item.sellingRate)}</td>
-                  <td className="border border-gray-300 px-2 sm:px-4 lg:px-6 py-2 lg:py-4 text-right font-bold text-xs sm:text-sm lg:text-base">₹{formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+                    </td>
+                    <td className="border border-gray-300 px-6 py-4 text-center font-medium">{item.orderQuantity}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-right font-medium">₹{formatIndianNumber(item.sellingRate)}</td>
+                    <td className="border border-gray-300 px-6 py-4 text-right font-bold">₹{formatIndianNumber((item.sellingRate * item.orderQuantity).toFixed(2))}</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
 
-        <div className="flex justify-end mb-8 lg:mb-12">
-          <div className="w-full sm:w-80 bg-gray-50 p-4 lg:p-6 rounded-lg border-2 border-gray-300">
-            <div className="flex justify-between py-2 lg:py-3 border-b border-gray-300 text-sm lg:text-lg">
-              <span className="font-medium">Subtotal:</span>
-              <span className="font-semibold">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</span>
-            </div>
-            <div className="flex justify-between py-2 lg:py-3 border-b border-gray-300 text-sm lg:text-lg">
-              <span className="font-medium">Tax (0%):</span>
-              <span className="font-semibold">₹0.00</span>
-            </div>
-            <div className="flex justify-between py-3 lg:py-4 font-bold text-lg lg:text-2xl text-gray-800 border-t-2 border-gray-400 mt-2">
-              <span>TOTAL:</span>
-              <span>₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</span>
-            </div>
+          <div className="flex justify-end mb-8">
+            <table className="w-80 border-collapse border border-gray-300">
+              <tbody>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Subtotal:</td>
+                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 font-medium text-gray-700">Tax (0%):</td>
+                  <td className="border border-gray-300 px-4 py-3 text-right font-semibold text-gray-800">₹0.00</td>
+                </tr>
+                <tr>
+                  <td className="border border-gray-300 px-4 py-3 bg-blue-800 text-white font-bold text-lg">TOTAL:</td>
+                  <td className="border border-gray-300 px-4 py-3 bg-blue-800 text-white text-right font-bold text-lg">₹{formatIndianNumber(quotationData.totalAmount.toFixed(2))}</td>
+                </tr>
+              </tbody>
+            </table>
           </div>
         </div>
 
-        <div className="text-center border-t-2 border-gray-300 pt-6 lg:pt-8">
-          <p className="text-base lg:text-lg font-medium text-gray-700 mb-2">Thank you for your business!</p>
-          <p className="text-sm lg:text-base text-gray-600">This quotation is valid for 30 days from the date of issue.</p>
+        {/* Simple Invoice Footer */}
+        <div className="p-6 text-center border-t-2 border-blue-800">
+          <p className="text-lg font-medium mb-2 text-gray-800">Thank you for your business!</p>
+          <p className="text-gray-600">This quotation is valid for 15 days from the date of issue.</p>
         </div>
       </div>
 

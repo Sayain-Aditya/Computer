@@ -41,21 +41,6 @@ const Dashboard = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    // Check if data is cached
-    const cachedData = sessionStorage.getItem('dashboardData')
-    if (cachedData) {
-      try {
-        const parsed = JSON.parse(cachedData)
-        setStats(parsed.stats)
-        setCategories(parsed.categories)
-        setAllOrders(parsed.orders)
-        setLoading(false)
-        return
-      } catch (e) {
-        console.log('Cache invalid, fetching fresh data')
-      }
-    }
-    
     fetchDashboardData().finally(() => setLoading(false));
   }, []);
 
@@ -177,18 +162,6 @@ const Dashboard = () => {
       
       setCategories(categories)
       setStats(newStats)
-      
-      // Cache data for 5 minutes
-      try {
-        sessionStorage.setItem('dashboardData', JSON.stringify({
-          stats: newStats,
-          categories,
-          orders,
-          timestamp: Date.now()
-        }))
-      } catch (e) {
-        console.log('Failed to cache data')
-      }
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
       setError('Failed to load dashboard data: ' + error.message);

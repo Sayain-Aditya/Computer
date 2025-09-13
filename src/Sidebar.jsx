@@ -29,9 +29,9 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
       <div className="p-4 border-b border-slate-800 flex items-center justify-between">
         <div className={`${isOpen ? 'block' : 'hidden'}`}>
           <h2 className="text-xl font-bold text-white m-0">
-            Computer Shop
+            Mittal Computers
           </h2>
-          <p className="text-gray-400 text-sm mt-1">Admin Panel</p>
+          {/* <p className="text-gray-400 text-sm mt-1">Admin Panel</p> */}
         </div>
         <button
           onClick={() => setIsOpen(!isOpen)}

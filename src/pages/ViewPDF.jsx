@@ -16,7 +16,10 @@ const ViewPDF = () => {
     const fetchQuotationData = async () => {
       try {
         console.log('Fetching quotation with ID:', id)
-        const quotationResponse = await axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/search')
+        const [quotationResponse, categoriesResponse] = await Promise.all([
+          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/search'),
+          axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
+        ])
         console.log('Quotation response:', quotationResponse.data)
         
         const quotation = quotationResponse.data.data?.find(q => q._id === id)
@@ -28,14 +31,17 @@ const ViewPDF = () => {
           return
         }
         
+        const allCategories = categoriesResponse.data
+        
         const productsWithNames = quotation.items?.map(item => {
           const product = item.product || {}
+          const category = allCategories.find(c => c._id === product.category)
           return {
             name: item.name || product?.name || 'Product',
             orderQuantity: item.quantity,
             sellingRate: item.price,
             description: product?.description || '',
-            category: product?.brand || 'No Category'
+            category: category?.name || 'No Category'
           }
         }) || []
         

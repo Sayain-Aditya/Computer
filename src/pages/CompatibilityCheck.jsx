@@ -7,14 +7,16 @@ import { formatIndianCurrency } from '../utils/formatters'
 const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, products }) => {
   const [compatibleProducts, setCompatibleProducts] = useState([])
   const [loading, setLoading] = useState(false)
+  const [showConfirmModal, setShowConfirmModal] = useState(false)
+  const [pendingProduct, setPendingProduct] = useState(null)
 
   useEffect(() => {
-    if (selectedProducts.length > 0) {
+    if (selectedProducts.length > 0 && compatibleProducts.length === 0) {
       fetchCompatibleProducts()
-    } else {
+    } else if (selectedProducts.length === 0) {
       setCompatibleProducts([])
     }
-  }, [selectedProducts])
+  }, [selectedProducts.length === 0 ? selectedProducts : []])
 
   const fetchCompatibleProducts = async () => {
     try {
@@ -49,13 +51,8 @@ const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, produc
       
       console.log('Compatible products after merging with full data:', compatibleData.length)
       
-      // Filter out products from categories already selected
-      const selectedCategories = selectedProducts.map(item => item.category?._id).filter(Boolean)
-      console.log('Already selected categories:', selectedCategories)
-      
-      compatibleData = compatibleData.filter(product => 
-        !selectedCategories.includes(product.category?._id)
-      )
+      // Don't filter out products from categories already selected
+      console.log('Keeping all compatible products regardless of selected categories')
       
       console.log('Compatible products after filtering:', compatibleData.length)
       setCompatibleProducts(compatibleData)
@@ -115,21 +112,78 @@ const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, produc
                           {product.brand || 'N/A'} • {formatIndianCurrency(product.sellingRate || 0)} • Stock: {product.quantity || 0}
                         </p>
                       </div>
-                      <motion.button
-                        onClick={() => onAddProduct(product)}
-                        disabled={!product.quantity || product.quantity === 0}
-                        className="w-full sm:w-auto px-4 py-2 bg-gradient-to-r from-blue-600 to-blue-700 text-white text-sm rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed font-medium transition-all duration-200 shadow-sm"
-                        whileHover={{ scale: (!product.quantity || product.quantity === 0) ? 1 : 1.02 }}
-                        whileTap={{ scale: (!product.quantity || product.quantity === 0) ? 1 : 0.98 }}
-                      >
-                        {!product.quantity || product.quantity === 0 ? '❌ Out of Stock' : '➕ Add'}
-                      </motion.button>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            const existingItem = selectedProducts.find(item => item._id === product._id)
+                            if (existingItem && existingItem.orderQuantity > 1) {
+                              onAddProduct(product, -1)
+                            }
+                          }}
+                          disabled={!selectedProducts.find(item => item._id === product._id) || selectedProducts.find(item => item._id === product._id)?.orderQuantity <= 1}
+                          className="w-8 h-8 bg-red-500 text-white rounded text-sm hover:bg-red-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                          −
+                        </button>
+                        <span className="text-sm font-medium w-8 text-center">
+                          {selectedProducts.find(item => item._id === product._id)?.orderQuantity || 0}
+                        </span>
+                        <button
+                          onClick={() => {
+                            const existingItem = selectedProducts.find(item => item._id === product._id)
+                            if (existingItem && existingItem.orderQuantity >= 1) {
+                              setPendingProduct(product)
+                              setShowConfirmModal(true)
+                            } else {
+                              onAddProduct(product, 1, true)
+                            }
+                          }}
+                          disabled={!product.quantity || product.quantity === 0}
+                          className="w-8 h-8 bg-green-500 text-white rounded text-sm hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
                   ))}
                 </div>
               </div>
             ))
           )}
+        </div>
+      )}
+      
+      {/* Confirmation Modal */}
+      {showConfirmModal && pendingProduct && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+            <h3 className="text-lg font-bold text-gray-900 mb-4">Add Another Item?</h3>
+            <p className="text-gray-600 mb-6">
+              Do you want to add this item again?<br/>
+              Current quantity: {selectedProducts.find(item => item._id === pendingProduct._id)?.orderQuantity || 0}
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => {
+                  setShowConfirmModal(false)
+                  setPendingProduct(null)
+                }}
+                className="flex-1 px-4 py-2 bg-gray-500 text-white rounded-lg hover:bg-gray-600 font-medium"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={() => {
+                  onAddProduct(pendingProduct, 1, true)
+                  setShowConfirmModal(false)
+                  setPendingProduct(null)
+                }}
+                className="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 font-medium"
+              >
+                Add
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </div>

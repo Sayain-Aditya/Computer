@@ -22,22 +22,22 @@ const SharedQuotation = () => {
 
     const fetchQuotationData = async () => {
       try {
-        // Fetch all data in parallel for faster loading
-        const [ordersResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/get'),
-          axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
+        console.log('Fetching quotation with ID:', id)
+        const [quotationResponse, categoriesResponse] = await Promise.all([
+          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/quotations/search'),
           axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
         ])
+        console.log('Quotation response:', quotationResponse.data)
         
-        const quotation = ordersResponse.data.data?.find(order => order._id === id && order.type === 'Quotation')
+        const quotation = quotationResponse.data.data?.find(q => q._id === id)
+        console.log('Found quotation:', quotation)
         
         if (!quotation) {
-          setError('Quotation not found')
+          console.log('No quotation found')
           setLoading(false)
-          return  
+          return
         }
         
-        const allProducts = productsResponse.data
         const allCategories = categoriesResponse.data
         
         const productsWithNames = quotation.items?.map(item => {
@@ -48,9 +48,11 @@ const SharedQuotation = () => {
             orderQuantity: item.quantity,
             sellingRate: item.price,
             description: product?.description || '',
-            category: category?.name || ''
+            category: category?.name || 'No Category'
           }
         }) || []
+        
+        console.log('Processed products:', productsWithNames)
         
         setQuotationData({
           customer: {

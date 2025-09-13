@@ -60,18 +60,26 @@ const CreateOrder = () => {
 
 
 
-  const addToOrder = (product, quantity = 1) => {
+  const addToOrder = (product, quantity = 1, skipConfirm = false) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
-    if (existingItem) {
+    if (existingItem && !skipConfirm && quantity > 0) {
       setPendingProduct({ product, quantity })
       setShowConfirmModal(true)
       return
-    } else {
+    }
+    
+    if (existingItem) {
+      if (quantity < 0 && existingItem.orderQuantity + quantity <= 0) {
+        setSelectedProducts(selectedProducts.filter(item => item._id !== product._id))
+      } else {
+        setSelectedProducts(selectedProducts.map(item =>
+          item._id === product._id ? { ...item, orderQuantity: Math.max(1, item.orderQuantity + quantity) } : item
+        ))
+      }
+    } else if (quantity > 0) {
       const newProducts = [...selectedProducts, { ...product, orderQuantity: quantity }]
       setSelectedProducts(newProducts)
     }
-
-
   }
 
   const removeFromOrder = (productId) => {
@@ -370,7 +378,15 @@ const CreateOrder = () => {
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-gray-500">{product.quantity}</span>
                       <motion.button
-                        onClick={() => addToOrder(product)}
+                        onClick={() => {
+                          const existingItem = selectedProducts.find(item => item._id === product._id)
+                          if (existingItem) {
+                            setPendingProduct({ product, quantity: 1 })
+                            setShowConfirmModal(true)
+                          } else {
+                            addToOrder(product)
+                          }
+                        }}
                         disabled={product.quantity === 0}
                         className="px-3 py-1.5 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                         whileHover={{ scale: product.quantity === 0 ? 1 : 1.05 }}
@@ -647,7 +663,7 @@ const CreateOrder = () => {
         <span className="text-2xl">🛒</span>
         {selectedProducts.length > 0 && (
           <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs rounded-full w-6 h-6 flex items-center justify-center">
-            {selectedProducts.length}
+            {selectedProducts.reduce((total, item) => total + item.orderQuantity, 0)}
           </span>
         )}
       </button>
@@ -658,17 +674,13 @@ const CreateOrder = () => {
           <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
             <h3 className="text-lg font-bold text-gray-900 mb-4">Item Already Added</h3>
             <p className="text-gray-600 mb-6">
-              "{pendingProduct.product.name}" is already in your cart. Do you want to add again?
+              Do you want to add this item again?<br/>
+              Current quantity: {selectedProducts.find(item => item._id === pendingProduct.product._id)?.orderQuantity || 0}
             </p>
             <div className="flex gap-3">
               <button
                 onClick={() => {
-                  const updatedProducts = selectedProducts.map(item =>
-                    item._id === pendingProduct.product._id
-                      ? { ...item, orderQuantity: item.orderQuantity + pendingProduct.quantity }
-                      : item
-                  )
-                  setSelectedProducts(updatedProducts)
+                  addToOrder(pendingProduct.product, pendingProduct.quantity, true)
                   setShowConfirmModal(false)
                   setPendingProduct(null)
                 }}

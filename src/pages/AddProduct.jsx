@@ -279,16 +279,7 @@ const AddProduct = () => {
 
 
           <div className="md:col-span-2">
-            <div className="flex justify-between items-center mb-3">
-              <h4 className="text-sm font-medium text-gray-700">Additional Attributes</h4>
-              <button
-                type="button"
-                onClick={() => setShowBulkInput(!showBulkInput)}
-                className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
-              >
-                {showBulkInput ? 'Single Add' : 'Bulk Add'}
-              </button>
-            </div>
+            <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Attributes</h4>
             
             {showBulkInput ? (
               <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
@@ -316,6 +307,13 @@ const AddProduct = () => {
                   >
                     Clear
                   </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowBulkInput(false)}
+                    className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 text-sm"
+                  >
+                    Single Add
+                  </button>
                 </div>
               </div>
             ) : (
@@ -341,9 +339,21 @@ const AddProduct = () => {
                 >
                   Add
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowBulkInput(true)}
+                  className="px-4 py-2 bg-purple-600 text-white rounded hover:bg-purple-700 whitespace-nowrap"
+                >
+                  Bulk Add
+                </button>
               </div>
             )}
 
+            {Object.keys(formData.attributes).length > 0 && (
+              <div className="mb-2">
+                <p className="text-xs text-gray-500">{Object.keys(formData.attributes).length} attributes added</p>
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(formData.attributes).map(([key, value]) => {
                 const isBackendAttribute = backendAttributes.includes(key)

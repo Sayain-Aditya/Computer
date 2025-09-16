@@ -22,6 +22,8 @@ const AddProduct = () => {
     attributes: {}
   })
   const [newAttribute, setNewAttribute] = useState({ key: '', value: '' })
+  const [bulkAttributes, setBulkAttributes] = useState('')
+  const [showBulkInput, setShowBulkInput] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -101,6 +103,39 @@ const AddProduct = () => {
     const updatedAttributes = { ...formData.attributes }
     delete updatedAttributes[key]
     setFormData({ ...formData, attributes: updatedAttributes })
+  }
+
+  const addBulkAttributes = () => {
+    if (!bulkAttributes.trim()) return
+    
+    const lines = bulkAttributes.split('\n')
+    const newAttrs = {}
+    
+    lines.forEach(line => {
+      const trimmedLine = line.trim()
+      if (trimmedLine && trimmedLine.includes(':')) {
+        const [key, ...valueParts] = trimmedLine.split(':')
+        const value = valueParts.join(':').trim()
+        if (key.trim() && value) {
+          newAttrs[key.trim()] = value
+        }
+      }
+    })
+    
+    if (Object.keys(newAttrs).length > 0) {
+      setFormData({
+        ...formData,
+        attributes: {
+          ...formData.attributes,
+          ...newAttrs
+        }
+      })
+      setBulkAttributes('')
+      setShowBulkInput(false)
+      toast.success(`Added ${Object.keys(newAttrs).length} attributes`)
+    } else {
+      toast.error('No valid attributes found. Use format: key: value')
+    }
   }
 
   return (
@@ -244,33 +279,70 @@ const AddProduct = () => {
 
 
           <div className="md:col-span-2">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Attributes</h4>
-            
-
-            
-            <div className="flex flex-col sm:flex-row gap-2 mb-3">
-              <input
-                type="text"
-                placeholder="Attribute name (e.g., Socket)"
-                value={newAttribute.key}
-                onChange={(e) => setNewAttribute({ ...newAttribute, key: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              <input
-                type="text"
-                placeholder="Value (e.g., AM4)"
-                value={newAttribute.value}
-                onChange={(e) => setNewAttribute({ ...newAttribute, value: e.target.value })}
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
+            <div className="flex justify-between items-center mb-3">
+              <h4 className="text-sm font-medium text-gray-700">Additional Attributes</h4>
               <button
                 type="button"
-                onClick={addAttribute}
-                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
+                onClick={() => setShowBulkInput(!showBulkInput)}
+                className="px-3 py-1 bg-purple-600 text-white text-xs rounded hover:bg-purple-700"
               >
-                Add
+                {showBulkInput ? 'Single Add' : 'Bulk Add'}
               </button>
             </div>
+            
+            {showBulkInput ? (
+              <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+                <label className="block text-sm font-medium text-blue-700 mb-2">
+                  Bulk Add Attributes (one per line, format: key: value)
+                </label>
+                <textarea
+                  value={bulkAttributes}
+                  onChange={(e) => setBulkAttributes(e.target.value)}
+                  placeholder={`socketType: AM4\nramType: DDR4\npcieVersion: 4.0\nformFactor: ATX`}
+                  className="w-full px-3 py-2 border border-blue-300 rounded focus:outline-none focus:border-blue-500 h-24 text-sm"
+                />
+                <div className="flex gap-2 mt-2">
+                  <button
+                    type="button"
+                    onClick={addBulkAttributes}
+                    className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 text-sm"
+                  >
+                    Add All
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setBulkAttributes('')}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                  >
+                    Clear
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col sm:flex-row gap-2 mb-3">
+                <input
+                  type="text"
+                  placeholder="Attribute name (e.g., Socket)"
+                  value={newAttribute.key}
+                  onChange={(e) => setNewAttribute({ ...newAttribute, key: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                />
+                <input
+                  type="text"
+                  placeholder="Value (e.g., AM4)"
+                  value={newAttribute.value}
+                  onChange={(e) => setNewAttribute({ ...newAttribute, value: e.target.value })}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={addAttribute}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 whitespace-nowrap"
+                >
+                  Add
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
               {Object.entries(formData.attributes).map(([key, value]) => {

@@ -98,15 +98,15 @@ const Dashboard = () => {
     try {
       // Fetch only essential data first
       const [categoriesRes, ordersRes] = await Promise.all([
-        fetch('https://computer-shop-backend-five.vercel.app/api/categories/all'),
-        fetch('https://computer-shop-backend-five.vercel.app/api/orders/get')
+        fetch('http://localhost:5000/api/categories/all'),
+        fetch('http://localhost:5000/api/orders/get')
       ]);
 
       const categories = await categoriesRes.json()
       const ordersResponse = await ordersRes.json()
       
       // Fetch products separately to avoid blocking
-      const productsRes = await fetch('https://computer-shop-backend-five.vercel.app/api/products/all')
+      const productsRes = await fetch('http://localhost:5000/api/products/all')
       const products = await productsRes.json()
       
       const orders = ordersResponse.orders || ordersResponse.data || []

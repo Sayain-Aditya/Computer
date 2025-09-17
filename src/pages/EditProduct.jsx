@@ -31,7 +31,7 @@ const EditProduct = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
+      const response = await axios.get('http://localhost:5000/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -40,7 +40,7 @@ const EditProduct = () => {
 
   const fetchCategoryAttributes = async (categoryId, existingAttributes = {}) => {
     try {
-      const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/attributes/category/${categoryId}/attributes`)
+      const response = await axios.get(`http://localhost:5000/api/attributes/category/${categoryId}/attributes`)
       
       if (response.data && response.data.attributes) {
         const fetchedAttrs = Object.keys(response.data.attributes)
@@ -77,7 +77,7 @@ const EditProduct = () => {
 
   const fetchProduct = async () => {
     try {
-      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
+      const response = await axios.get('http://localhost:5000/api/products/all')
       const product = response.data.find(p => p._id === id)
       
       if (!product) {
@@ -116,7 +116,7 @@ const EditProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.put(`https://computer-shop-backend-five.vercel.app/api/products/update/${id}`, formData)
+      await axios.put(`http://localhost:5000/api/products/update/${id}`, formData)
       toast.success('Product updated successfully!')
       navigate('/products')
     } catch (error) {

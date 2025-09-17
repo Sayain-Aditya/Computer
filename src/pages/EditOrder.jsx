@@ -49,7 +49,7 @@ const EditOrder = () => {
       const compatibleProductsSet = new Set()
       
       for (const product of selectedProducts) {
-        const response = await axios.get(`https://computer-shop-backend-five.vercel.app/api/products/${product._id}/compatible`)
+        const response = await axios.get(`http://localhost:5000/api/products/${product._id}/compatible`)
         if (response.data && response.data.length > 0) {
           response.data.forEach(compatibleProduct => {
             if (!selectedProducts.some(selected => selected._id === compatibleProduct._id)) {
@@ -72,8 +72,8 @@ const EditOrder = () => {
   const fetchOrder = async () => {
     try {
       const [orderResponse, productsResponse] = await Promise.all([
-        axios.get(`https://computer-shop-backend-five.vercel.app/api/orders/get`),
-        axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
+        axios.get(`http://localhost:5000/api/orders/get`),
+        axios.get('http://localhost:5000/api/products/all')
       ])
       
       const order = orderResponse.data.data?.find(o => o._id === id)
@@ -126,7 +126,7 @@ const EditOrder = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/products/all')
+      const response = await axios.get('http://localhost:5000/api/products/all')
       setProducts(response.data)
     } catch (error) {
       console.error('Error fetching products:', error)
@@ -135,7 +135,7 @@ const EditOrder = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
+      const response = await axios.get('http://localhost:5000/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -214,7 +214,7 @@ const EditOrder = () => {
     }
 
     try {
-      await axios.put(`https://computer-shop-backend-five.vercel.app/api/orders/update/${id}`, orderData)
+      await axios.put(`http://localhost:5000/api/orders/update/${id}`, orderData)
       
       // Backend handles all stock updates automatically
       

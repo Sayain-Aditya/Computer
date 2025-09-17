@@ -31,9 +31,9 @@ const SharedOrder = () => {
       try {
         // Fetch all data in parallel for faster loading
         const [ordersResponse, productsResponse, categoriesResponse] = await Promise.all([
-          axios.get('https://computer-shop-backend-five.vercel.app/api/orders/get'),
-          axios.get('https://computer-shop-backend-five.vercel.app/api/products/all'),
-          axios.get('https://computer-shop-backend-five.vercel.app/api/categories/all')
+          axios.get('http://localhost:5000/api/orders/get'),
+          axios.get('http://localhost:5000/api/products/all'),
+          axios.get('http://localhost:5000/api/categories/all')
         ])
         
         const order = ordersResponse.data.data?.find(order => order._id === id && order.type !== 'Quotation')

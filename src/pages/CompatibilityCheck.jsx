@@ -24,7 +24,7 @@ const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, produc
       console.log('Fetching sequential compatible products for selected items:', selectedProducts.map(p => p._id))
       
       const selectedProductIds = selectedProducts.map(item => item._id)
-      const response = await axios.post('https://computer-shop-backend-five.vercel.app/api/products/compatibility/sequential', {
+      const response = await axios.post('http://localhost:5000/api/products/compatibility/sequential', {
         selectedProducts: selectedProductIds
       })
       

@@ -24,8 +24,8 @@ const SharedQuotation = () => {
       try {
         console.log('Fetching quotation with ID:', id)
         const [quotationResponse, categoriesResponse] = await Promise.all([
-          axios.get('http://localhost:5000/api/orders/quotations/search'),
-          axios.get('http://localhost:5000/api/categories/all')
+          axios.get('https://computer-b.vercel.app/api/orders/quotations/search'),
+          axios.get('https://computer-b.vercel.app/api/categories/all')
         ])
         console.log('Quotation response:', quotationResponse.data)
         

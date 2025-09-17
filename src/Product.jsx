@@ -40,7 +40,7 @@ const Product = () => {
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true)
-      let url = 'http://localhost:5000/api/products/all'
+      let url = 'https://computer-b.vercel.app/api/products/all'
       const params = new URLSearchParams()
       
       if (selectedCategory) {
@@ -89,7 +89,7 @@ const Product = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories/all')
+      const response = await axios.get('https://computer-b.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -103,7 +103,7 @@ const Product = () => {
 
   const handleDelete = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/products/delete/${productToDelete}`)
+      await axios.delete(`https://computer-b.vercel.app/api/products/delete/${productToDelete}`)
       fetchProducts()
       toast.success('✅ Product deleted successfully!')
       setShowDeleteModal(false)
@@ -118,7 +118,7 @@ const Product = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/products/export/csv')
+      const response = await axios.get('https://computer-b.vercel.app/api/products/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)

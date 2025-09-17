@@ -22,8 +22,8 @@ const QuotationList = () => {
   const fetchQuotations = async (search = '') => {
     try {
       const url = search 
-        ? `http://localhost:5000/api/orders/quotations/search?search=${encodeURIComponent(search)}`
-        : 'http://localhost:5000/api/orders/quotations/search'
+        ? `https://computer-b.vercel.app/api/orders/quotations/search?search=${encodeURIComponent(search)}`
+        : 'https://computer-b.vercel.app/api/orders/quotations/search'
       
       console.log('API URL:', url)
       const response = await axios.get(url)
@@ -51,7 +51,7 @@ const QuotationList = () => {
 
   const handleDeleteQuotation = async () => {
     try {
-      await axios.delete(`http://localhost:5000/api/orders/quotations/${quotationToDelete}`)
+      await axios.delete(`https://computer-b.vercel.app/api/orders/quotations/${quotationToDelete}`)
       toast.success('Quotation deleted successfully!')
       fetchQuotations(searchTerm)
       setShowDeleteModal(false)
@@ -68,7 +68,7 @@ const QuotationList = () => {
 
   const handleStatusChange = async (quotationId, newStatus) => {
     try {
-      await axios.put(`http://localhost:5000/api/orders/quotations/${quotationId}/status`, {
+      await axios.put(`https://computer-b.vercel.app/api/orders/quotations/${quotationId}/status`, {
         status: newStatus
       })
       
@@ -113,7 +113,7 @@ const QuotationList = () => {
 
   const exportToCSV = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/orders/quotations/export/csv')
+      const response = await axios.get('https://computer-b.vercel.app/api/orders/quotations/export/csv')
       
       const blob = new Blob([response.data], { type: 'text/csv;charset=utf-8;' })
       const url = window.URL.createObjectURL(blob)

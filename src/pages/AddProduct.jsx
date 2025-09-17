@@ -31,7 +31,7 @@ const AddProduct = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories/all')
+      const response = await axios.get('https://computer-b.vercel.app/api/categories/all')
       setCategories(response.data)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -40,7 +40,7 @@ const AddProduct = () => {
 
   const fetchCategoryAttributes = async (categoryId) => {
     try {
-      const response = await axios.get(`http://localhost:5000/api/attributes/category/${categoryId}/attributes`)
+      const response = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${categoryId}/attributes`)
       
       if (response.data && response.data.attributes) {
         const fetchedAttrs = Object.keys(response.data.attributes)
@@ -77,7 +77,7 @@ const AddProduct = () => {
   const handleSubmit = async (e) => {
     e.preventDefault()
     try {
-      await axios.post('http://localhost:5000/api/products/create', formData)
+      await axios.post('https://computer-b.vercel.app/api/products/create', formData)
       toast.success('Product created successfully!')
       navigate('/products')
     } catch (error) {

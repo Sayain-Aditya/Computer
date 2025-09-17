@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
+import ProductPreview from '../components/ProductPreview'
 
 const AddProduct = () => {
   const navigate = useNavigate()
@@ -24,6 +25,10 @@ const AddProduct = () => {
   const [newAttribute, setNewAttribute] = useState({ key: '', value: '' })
   const [bulkAttributes, setBulkAttributes] = useState('')
   const [showBulkInput, setShowBulkInput] = useState(false)
+  const [productUrl, setProductUrl] = useState('')
+  const [isScrapingUrl, setIsScrapingUrl] = useState(false)
+  const [scrapedData, setScrapedData] = useState(null)
+  const [showPreview, setShowPreview] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -135,6 +140,114 @@ const AddProduct = () => {
       toast.success(`Added ${Object.keys(newAttrs).length} attributes`)
     } else {
       toast.error('No valid attributes found. Use format: key: value')
+    }
+  }
+
+  const scrapeProductFromUrl = async () => {
+    if (!productUrl.trim()) {
+      toast.error('Please enter a product URL')
+      return
+    }
+
+    setIsScrapingUrl(true)
+    try {
+      const response = await axios.post('https://computer-b.vercel.app/api/products/scrape', {
+        url: productUrl
+      })
+
+      if (response.data.success && response.data.data) {
+        setScrapedData(response.data.data)
+        setShowPreview(true)
+      } else {
+        toast.error('No product data found at this URL')
+      }
+    } catch (error) {
+      console.error('Error scraping product:', error)
+      toast.error('Failed to extract product data. Please check the URL.')
+    } finally {
+      setIsScrapingUrl(false)
+    }
+  }
+
+  const handleConfirmScrapedData = () => {
+    if (scrapedData) {
+      // Map scraped attributes to existing category attributes
+      const mappedAttributes = { ...formData.attributes }
+      
+      if (scrapedData.attributes) {
+        Object.entries(scrapedData.attributes).forEach(([key, value]) => {
+          // Try to match with existing category attributes
+          const existingKey = backendAttributes.find(attr => 
+            attr.toLowerCase().includes(key.toLowerCase()) || 
+            key.toLowerCase().includes(attr.toLowerCase())
+          )
+          
+          if (existingKey) {
+            mappedAttributes[existingKey] = value
+          } else {
+            mappedAttributes[key] = value
+          }
+        })
+      }
+      
+      setFormData(prev => ({
+        ...prev,
+        name: scrapedData.name || prev.name,
+        brand: scrapedData.brand || prev.brand,
+        modelNumber: scrapedData.modelNumber || prev.modelNumber,
+        sellingRate: scrapedData.sellingRate || prev.sellingRate,
+        attributes: mappedAttributes
+      }))
+      toast.success('Product data applied successfully!')
+    }
+    setShowPreview(false)
+    setScrapedData(null)
+    setProductUrl('')
+  }
+
+  const handleCancelScrapedData = () => {
+    setShowPreview(false)
+    setScrapedData(null)
+  }
+
+  const extractAllAttributes = async () => {
+    if (!productUrl.trim()) {
+      toast.error('Please enter a product URL')
+      return
+    }
+    
+    if (!formData.category) {
+      toast.error('Please select a category first')
+      return
+    }
+
+    setIsScrapingUrl(true)
+    try {
+      const categoryName = categories.find(cat => cat._id === formData.category)?.name
+      
+      const response = await axios.post('https://computer-b.vercel.app/api/attributes/extract-from-url', {
+        url: productUrl,
+        categoryName: categoryName
+      })
+
+      if (response.data.success) {
+        setFormData(prev => ({
+          ...prev,
+          attributes: {
+            ...prev.attributes,
+            ...response.data.attributes
+          }
+        }))
+        toast.success(`All ${categoryName} attributes populated!`)
+        setProductUrl('')
+      } else {
+        toast.error('Failed to extract attributes')
+      }
+    } catch (error) {
+      console.error('Error extracting attributes:', error)
+      toast.error('Failed to extract attributes from URL')
+    } finally {
+      setIsScrapingUrl(false)
     }
   }
 
@@ -276,6 +389,36 @@ const AddProduct = () => {
             />
           </div>
 
+          <div className="md:col-span-2">
+            <label className="block text-sm font-medium text-gray-700 mb-1">Auto-fill from Product URL</label>
+            <div className="flex gap-2">
+              <input
+                type="url"
+                value={productUrl}
+                onChange={(e) => setProductUrl(e.target.value)}
+                placeholder="Paste product URL from Amazon, Flipkart, etc."
+                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+              />
+              <button
+                type="button"
+                onClick={scrapeProductFromUrl}
+                disabled={isScrapingUrl}
+                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:bg-gray-400 whitespace-nowrap"
+              >
+                {isScrapingUrl ? 'Extracting...' : 'Auto-fill'}
+              </button>
+              <button
+                type="button"
+                onClick={extractAllAttributes}
+                disabled={isScrapingUrl || !formData.category}
+                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 whitespace-nowrap"
+              >
+                Fill All Attributes
+              </button>
+            </div>
+            <p className="text-xs text-gray-500 mt-1">Auto-fill: Extracts basic data. Fill All Attributes: Populates all category-specific fields.</p>
+          </div>
+
 
 
           <div className="md:col-span-2">
@@ -402,6 +545,12 @@ const AddProduct = () => {
           </div>
         </form>
       </motion.div>
+      
+      <ProductPreview 
+        scrapedData={scrapedData}
+        onConfirm={handleConfirmScrapedData}
+        onCancel={handleCancelScrapedData}
+      />
     </motion.div>
   )
 }

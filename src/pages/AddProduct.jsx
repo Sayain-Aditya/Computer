@@ -29,6 +29,9 @@ const AddProduct = () => {
   const [isScrapingUrl, setIsScrapingUrl] = useState(false)
   const [scrapedData, setScrapedData] = useState(null)
   const [showPreview, setShowPreview] = useState(false)
+  const [productImage, setProductImage] = useState('')
+  const [selectedFile, setSelectedFile] = useState(null)
+  const [isProcessingImage, setIsProcessingImage] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -210,9 +213,9 @@ const AddProduct = () => {
     setScrapedData(null)
   }
 
-  const extractAllAttributes = async () => {
-    if (!productUrl.trim()) {
-      toast.error('Please enter a product URL')
+  const extractFromImage = async () => {
+    if (!productImage.trim() && !selectedFile) {
+      toast.error('Please provide a product image URL or upload a file')
       return
     }
     
@@ -221,13 +224,23 @@ const AddProduct = () => {
       return
     }
 
-    setIsScrapingUrl(true)
+    setIsProcessingImage(true)
     try {
       const categoryName = categories.find(cat => cat._id === formData.category)?.name
       
-      const response = await axios.post('https://computer-b.vercel.app/api/attributes/extract-from-url', {
-        url: productUrl,
-        categoryName: categoryName
+      const formDataToSend = new FormData()
+      formDataToSend.append('categoryName', categoryName)
+      
+      if (selectedFile) {
+        formDataToSend.append('image', selectedFile)
+      } else {
+        formDataToSend.append('imageUrl', productImage)
+      }
+      
+      const response = await axios.post('http://localhost:5000/api/attributes/extract-from-image', formDataToSend, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       })
 
       if (response.data.success) {
@@ -238,18 +251,21 @@ const AddProduct = () => {
             ...response.data.attributes
           }
         }))
-        toast.success(`All ${categoryName} attributes populated!`)
-        setProductUrl('')
+        toast.success('Attributes extracted from image!')
+        setProductImage('')
+        setSelectedFile(null)
       } else {
-        toast.error('Failed to extract attributes')
+        toast.error('Failed to extract attributes from image')
       }
     } catch (error) {
-      console.error('Error extracting attributes:', error)
-      toast.error('Failed to extract attributes from URL')
+      console.error('Error processing image:', error)
+      toast.error('Failed to process product image')
     } finally {
-      setIsScrapingUrl(false)
+      setIsProcessingImage(false)
     }
   }
+
+
 
   return (
     <motion.div 
@@ -389,34 +405,39 @@ const AddProduct = () => {
             />
           </div>
 
+
+
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Auto-fill from Product URL</label>
-            <div className="flex gap-2">
-              <input
-                type="url"
-                value={productUrl}
-                onChange={(e) => setProductUrl(e.target.value)}
-                placeholder="Paste product URL from Amazon, Flipkart, etc."
-                className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-              />
-              <button
-                type="button"
-                onClick={scrapeProductFromUrl}
-                disabled={isScrapingUrl}
-                className="px-4 py-2 bg-orange-600 text-white rounded hover:bg-orange-700 disabled:bg-gray-400 whitespace-nowrap"
-              >
-                {isScrapingUrl ? 'Extracting...' : 'Auto-fill'}
-              </button>
-              <button
-                type="button"
-                onClick={extractAllAttributes}
-                disabled={isScrapingUrl || !formData.category}
-                className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-400 whitespace-nowrap"
-              >
-                Fill All Attributes
-              </button>
+            <label className="block text-sm font-medium text-gray-700 mb-1">Extract from Product Image</label>
+            <div className="space-y-2">
+              <div className="flex gap-2">
+                <input
+                  type="url"
+                  value={productImage}
+                  onChange={(e) => setProductImage(e.target.value)}
+                  placeholder="Paste product image URL"
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                />
+              </div>
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-gray-500">OR</span>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => setSelectedFile(e.target.files[0])}
+                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  type="button"
+                  onClick={extractFromImage}
+                  disabled={isProcessingImage || !formData.category}
+                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 whitespace-nowrap"
+                >
+                  {isProcessingImage ? 'Processing...' : 'Extract from Image'}
+                </button>
+              </div>
             </div>
-            <p className="text-xs text-gray-500 mt-1">Auto-fill: Extracts basic data. Fill All Attributes: Populates all category-specific fields.</p>
+            <p className="text-xs text-gray-500 mt-1">AI reads product specification images and extracts attributes automatically.</p>
           </div>
 
 

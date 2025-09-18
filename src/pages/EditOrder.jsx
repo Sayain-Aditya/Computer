@@ -10,6 +10,7 @@ const EditOrder = () => {
   const [products, setProducts] = useState([])
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
+  const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducts, setSelectedProducts] = useState([])
   const [originalProducts, setOriginalProducts] = useState([])
   const [compatibleProducts, setCompatibleProducts] = useState([])
@@ -33,6 +34,13 @@ const EditOrder = () => {
     fetchProducts()
     fetchCategories()
   }, [id])
+
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      fetchProducts()
+    }, 500)
+    return () => clearTimeout(delayedSearch)
+  }, [searchTerm, selectedCategory])
 
   useEffect(() => {
     fetchCompatibleProducts()
@@ -126,10 +134,61 @@ const EditOrder = () => {
 
   const fetchProducts = async () => {
     try {
-      const response = await axios.get('https://computer-b.vercel.app/api/products/all')
-      setProducts(response.data)
+      let url
+      
+      // Determine which API to use based on filters
+      if (searchTerm.trim() && selectedCategory) {
+        // Both search and category - use search API with category parameter as fallback
+        url = `https://computer-b.vercel.app/api/products/search?q=${encodeURIComponent(searchTerm)}`
+      } else if (searchTerm.trim()) {
+        // Only search
+        url = `https://computer-b.vercel.app/api/products/search?q=${encodeURIComponent(searchTerm)}`
+      } else if (selectedCategory) {
+        // Only category - use dedicated category API
+        url = `https://computer-b.vercel.app/api/products/category/${selectedCategory}`
+      } else {
+        // No filters
+        url = 'https://computer-b.vercel.app/api/products/all'
+      }
+      
+      console.log('Fetching products with URL:', url)
+      const response = await axios.get(url)
+      console.log('API Response:', response.data)
+      
+      // Handle different response structures
+      let productsArray = []
+      if (Array.isArray(response.data)) {
+        productsArray = response.data
+      } else if (response.data && Array.isArray(response.data.products)) {
+        productsArray = response.data.products
+      } else if (response.data && Array.isArray(response.data.data)) {
+        productsArray = response.data.data
+      } else {
+        console.log('Unexpected response structure:', response.data)
+        productsArray = []
+      }
+      
+      // If both search and category, apply client-side category filter
+      if (searchTerm.trim() && selectedCategory && productsArray.length > 0) {
+        productsArray = productsArray.filter(product => product.category?._id === selectedCategory)
+        console.log('Applied client-side category filtering for combined search+category')
+      }
+      
+      console.log('Final products array:', productsArray)
+      setProducts(productsArray)
     } catch (error) {
       console.error('Error fetching products:', error)
+      console.error('Error details:', error.response?.data)
+      
+      // Fallback to /all endpoint if API fails
+      try {
+        console.log('Trying fallback to /all endpoint')
+        const fallbackResponse = await axios.get('https://computer-b.vercel.app/api/products/all')
+        setProducts(fallbackResponse.data || [])
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError)
+        setProducts([])
+      }
     }
   }
 
@@ -296,6 +355,13 @@ const EditOrder = () => {
             Available Products
           </h3>
           <div className="flex flex-col sm:flex-row gap-3 w-full sm:w-auto">
+            <input
+              type="text"
+              placeholder="Search products..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="w-full sm:w-64 px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
+            />
             <select
               value={selectedCategory}
               onChange={(e) => setSelectedCategory(e.target.value)}
@@ -349,7 +415,7 @@ const EditOrder = () => {
                 </tr>
               </thead>
               <tbody className="bg-white divide-y divide-gray-200">
-                {products.filter(product => !selectedCategory || product.category?._id === selectedCategory).map((product, index) => {
+                {products.map((product, index) => {
                   const isSelected = selectedProducts.some(item => item._id === product._id)
                   return (
                   <motion.tr 
@@ -399,7 +465,7 @@ const EditOrder = () => {
           </div>
 
           <div className="md:hidden">
-            {products.filter(product => !selectedCategory || product.category?._id === selectedCategory).map((product, index) => {
+            {products.map((product, index) => {
               const isSelected = selectedProducts.some(item => item._id === product._id)
               return (
                 <motion.div 

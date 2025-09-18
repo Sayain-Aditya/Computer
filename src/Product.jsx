@@ -8,7 +8,6 @@ import { formatIndianCurrency } from './utils/formatters'
 const Product = () => {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
-  const [allProducts, setAllProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -29,49 +28,69 @@ const Product = () => {
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true)
-      const response = await axios.get('https://computer-b.vercel.app/api/products/all')
-      const data = response.data
       
-      let productsArray = []
-      if (Array.isArray(data)) {
-        productsArray = data
-      } else if (data && Array.isArray(data.products)) {
-        productsArray = data.products
-      } else if (data && Array.isArray(data.data)) {
-        productsArray = data.data
+      let url
+      
+      // Determine which API to use based on filters
+      if (searchTerm.trim() && selectedCategory) {
+        // Both search and category - use search API with category parameter as fallback
+        url = `https://computer-b.vercel.app/api/products/search?q=${encodeURIComponent(searchTerm)}`
+      } else if (searchTerm.trim()) {
+        // Only search
+        url = `https://computer-b.vercel.app/api/products/search?q=${encodeURIComponent(searchTerm)}`
+      } else if (selectedCategory) {
+        // Only category - use dedicated category API
+        url = `https://computer-b.vercel.app/api/products/category/${selectedCategory}`
       } else {
+        // No filters
+        url = 'https://computer-b.vercel.app/api/products/all'
+      }
+      
+      console.log('Fetching products with URL:', url)
+      const response = await axios.get(url)
+      console.log('API Response:', response.data)
+      
+      // Handle different response structures
+      let productsArray = []
+      if (Array.isArray(response.data)) {
+        productsArray = response.data
+      } else if (response.data && Array.isArray(response.data.products)) {
+        productsArray = response.data.products
+      } else if (response.data && Array.isArray(response.data.data)) {
+        productsArray = response.data.data
+      } else {
+        console.log('Unexpected response structure:', response.data)
         productsArray = []
       }
       
-      setAllProducts(productsArray)
+      // If both search and category, apply client-side category filter
+      if (searchTerm.trim() && selectedCategory && productsArray.length > 0) {
+        productsArray = productsArray.filter(product => product.category?._id === selectedCategory)
+        console.log('Applied client-side category filtering for combined search+category')
+      }
+      
+      console.log('Final products array:', productsArray)
+      setProducts(productsArray)
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching products:', error)
-      setAllProducts([])
+      console.error('Error details:', error.response?.data)
+      
+      // Fallback to /all endpoint if API fails
+      try {
+        console.log('Trying fallback to /all endpoint')
+        const fallbackResponse = await axios.get('https://computer-b.vercel.app/api/products/all')
+        setProducts(fallbackResponse.data || [])
+      } catch (fallbackError) {
+        console.error('Fallback also failed:', fallbackError)
+        setProducts([])
+      }
     } finally {
       setLoading(false)
     }
   }
 
-  const getFilteredProducts = () => {
-    let filtered = allProducts
-    
-    if (selectedCategory) {
-      filtered = filtered.filter(product => product.category?._id === selectedCategory)
-    }
-    
-    if (searchTerm.trim()) {
-      const search = searchTerm.toLowerCase()
-      filtered = filtered.filter(product => 
-        product.name?.toLowerCase().includes(search) ||
-        product.modelNumber?.toLowerCase().includes(search) ||
-        product.brand?.toLowerCase().includes(search) ||
-        product.category?.name?.toLowerCase().includes(search)
-      )
-    }
-    
-    return filtered
-  }
+
 
   const fetchCategories = async () => {
     try {
@@ -128,8 +147,11 @@ const Product = () => {
 
 
   useEffect(() => {
-    setProducts(getFilteredProducts())
-  }, [allProducts, searchTerm, selectedCategory])
+    const delayedSearch = setTimeout(() => {
+      fetchProducts(1)
+    }, 500)
+    return () => clearTimeout(delayedSearch)
+  }, [searchTerm, selectedCategory])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">

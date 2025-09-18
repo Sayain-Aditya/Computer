@@ -237,7 +237,7 @@ const AddProduct = () => {
         formDataToSend.append('imageUrl', productImage)
       }
       
-      const response = await axios.post('http://localhost:5000/api/attributes/extract-from-image', formDataToSend, {
+      const response = await axios.post('https://computer-b.vercel.app/api/attributes/extract-from-image', formDataToSend, {
         headers: {
           'Content-Type': 'multipart/form-data'
         }

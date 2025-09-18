@@ -3,7 +3,6 @@ import { useNavigate } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
-import ProductPreview from '../components/ProductPreview'
 
 const AddProduct = () => {
   const navigate = useNavigate()
@@ -25,13 +24,6 @@ const AddProduct = () => {
   const [newAttribute, setNewAttribute] = useState({ key: '', value: '' })
   const [bulkAttributes, setBulkAttributes] = useState('')
   const [showBulkInput, setShowBulkInput] = useState(false)
-  const [productUrl, setProductUrl] = useState('')
-  const [isScrapingUrl, setIsScrapingUrl] = useState(false)
-  const [scrapedData, setScrapedData] = useState(null)
-  const [showPreview, setShowPreview] = useState(false)
-  const [productImage, setProductImage] = useState('')
-  const [selectedFile, setSelectedFile] = useState(null)
-  const [isProcessingImage, setIsProcessingImage] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -145,127 +137,6 @@ const AddProduct = () => {
       toast.error('No valid attributes found. Use format: key: value')
     }
   }
-
-  const scrapeProductFromUrl = async () => {
-    if (!productUrl.trim()) {
-      toast.error('Please enter a product URL')
-      return
-    }
-
-    setIsScrapingUrl(true)
-    try {
-      const response = await axios.post('https://computer-b.vercel.app/api/products/scrape', {
-        url: productUrl
-      })
-
-      if (response.data.success && response.data.data) {
-        setScrapedData(response.data.data)
-        setShowPreview(true)
-      } else {
-        toast.error('No product data found at this URL')
-      }
-    } catch (error) {
-      console.error('Error scraping product:', error)
-      toast.error('Failed to extract product data. Please check the URL.')
-    } finally {
-      setIsScrapingUrl(false)
-    }
-  }
-
-  const handleConfirmScrapedData = () => {
-    if (scrapedData) {
-      // Map scraped attributes to existing category attributes
-      const mappedAttributes = { ...formData.attributes }
-      
-      if (scrapedData.attributes) {
-        Object.entries(scrapedData.attributes).forEach(([key, value]) => {
-          // Try to match with existing category attributes
-          const existingKey = backendAttributes.find(attr => 
-            attr.toLowerCase().includes(key.toLowerCase()) || 
-            key.toLowerCase().includes(attr.toLowerCase())
-          )
-          
-          if (existingKey) {
-            mappedAttributes[existingKey] = value
-          } else {
-            mappedAttributes[key] = value
-          }
-        })
-      }
-      
-      setFormData(prev => ({
-        ...prev,
-        name: scrapedData.name || prev.name,
-        brand: scrapedData.brand || prev.brand,
-        modelNumber: scrapedData.modelNumber || prev.modelNumber,
-        sellingRate: scrapedData.sellingRate || prev.sellingRate,
-        attributes: mappedAttributes
-      }))
-      toast.success('Product data applied successfully!')
-    }
-    setShowPreview(false)
-    setScrapedData(null)
-    setProductUrl('')
-  }
-
-  const handleCancelScrapedData = () => {
-    setShowPreview(false)
-    setScrapedData(null)
-  }
-
-  const extractFromImage = async () => {
-    if (!productImage.trim() && !selectedFile) {
-      toast.error('Please provide a product image URL or upload a file')
-      return
-    }
-    
-    if (!formData.category) {
-      toast.error('Please select a category first')
-      return
-    }
-
-    setIsProcessingImage(true)
-    try {
-      const categoryName = categories.find(cat => cat._id === formData.category)?.name
-      
-      const formDataToSend = new FormData()
-      formDataToSend.append('categoryName', categoryName)
-      
-      if (selectedFile) {
-        formDataToSend.append('image', selectedFile)
-      } else {
-        formDataToSend.append('imageUrl', productImage)
-      }
-      
-      const response = await axios.post('https://computer-b.vercel.app/api/attributes/extract-from-image', formDataToSend, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      })
-
-      if (response.data.success) {
-        setFormData(prev => ({
-          ...prev,
-          attributes: {
-            ...prev.attributes,
-            ...response.data.attributes
-          }
-        }))
-        toast.success('Attributes extracted from image!')
-        setProductImage('')
-        setSelectedFile(null)
-      } else {
-        toast.error('Failed to extract attributes from image')
-      }
-    } catch (error) {
-      console.error('Error processing image:', error)
-      toast.error('Failed to process product image')
-    } finally {
-      setIsProcessingImage(false)
-    }
-  }
-
-
 
   return (
     <motion.div 
@@ -408,41 +279,6 @@ const AddProduct = () => {
 
 
           <div className="md:col-span-2">
-            <label className="block text-sm font-medium text-gray-700 mb-1">Extract from Product Image</label>
-            <div className="space-y-2">
-              <div className="flex gap-2">
-                <input
-                  type="url"
-                  value={productImage}
-                  onChange={(e) => setProductImage(e.target.value)}
-                  placeholder="Paste product image URL"
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-                />
-              </div>
-              <div className="flex items-center gap-2">
-                <span className="text-sm text-gray-500">OR</span>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => setSelectedFile(e.target.files[0])}
-                  className="flex-1 px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  type="button"
-                  onClick={extractFromImage}
-                  disabled={isProcessingImage || !formData.category}
-                  className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 disabled:bg-gray-400 whitespace-nowrap"
-                >
-                  {isProcessingImage ? 'Processing...' : 'Extract from Image'}
-                </button>
-              </div>
-            </div>
-            <p className="text-xs text-gray-500 mt-1">AI reads product specification images and extracts attributes automatically.</p>
-          </div>
-
-
-
-          <div className="md:col-span-2">
             <h4 className="text-sm font-medium text-gray-700 mb-3">Additional Attributes</h4>
             
             {showBulkInput ? (
@@ -566,12 +402,6 @@ const AddProduct = () => {
           </div>
         </form>
       </motion.div>
-      
-      <ProductPreview 
-        scrapedData={scrapedData}
-        onConfirm={handleConfirmScrapedData}
-        onCancel={handleCancelScrapedData}
-      />
     </motion.div>
   )
 }

@@ -8,6 +8,7 @@ import { formatIndianCurrency } from './utils/formatters'
 const Product = () => {
   const navigate = useNavigate()
   const [products, setProducts] = useState([])
+  const [allProducts, setAllProducts] = useState([])
   const [loading, setLoading] = useState(false)
   const [categories, setCategories] = useState([])
   const [selectedCategory, setSelectedCategory] = useState('')
@@ -23,47 +24,14 @@ const Product = () => {
     fetchCategories()
   }, [])
 
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      fetchProducts(1)
-    }, 500)
-    return () => clearTimeout(delayedSearch)
-  }, [searchTerm, selectedCategory])
 
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      fetchProducts(1)
-    }, 500)
-    return () => clearTimeout(delayedSearch)
-  }, [searchTerm, selectedCategory])
 
   const fetchProducts = async (page = 1) => {
     try {
       setLoading(true)
-      let url = 'https://computer-b.vercel.app/api/products/all'
-      const params = new URLSearchParams()
-      
-      if (selectedCategory) {
-        params.append('category', selectedCategory)
-      }
-      
-      if (searchTerm) {
-        params.append('search', searchTerm)
-      }
-      
-      if (params.toString()) {
-        url += '?' + params.toString()
-      }
-      
-      console.log('Fetching URL:', url)
-      const response = await axios.get(url)
-      console.log('Full response:', response)
-      console.log('Response data:', response.data)
-      console.log('Data type:', typeof response.data)
-      console.log('Is array:', Array.isArray(response.data))
+      const response = await axios.get('https://computer-b.vercel.app/api/products/all')
       const data = response.data
       
-      // Handle different response structures
       let productsArray = []
       if (Array.isArray(data)) {
         productsArray = data
@@ -72,19 +40,37 @@ const Product = () => {
       } else if (data && Array.isArray(data.data)) {
         productsArray = data.data
       } else {
-        console.log('Unexpected data structure:', data)
         productsArray = []
       }
       
-      console.log('Final products array:', productsArray)
-      setProducts(productsArray)
+      setAllProducts(productsArray)
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching products:', error)
-      setProducts([])
+      setAllProducts([])
     } finally {
       setLoading(false)
     }
+  }
+
+  const getFilteredProducts = () => {
+    let filtered = allProducts
+    
+    if (selectedCategory) {
+      filtered = filtered.filter(product => product.category?._id === selectedCategory)
+    }
+    
+    if (searchTerm.trim()) {
+      const search = searchTerm.toLowerCase()
+      filtered = filtered.filter(product => 
+        product.name?.toLowerCase().includes(search) ||
+        product.modelNumber?.toLowerCase().includes(search) ||
+        product.brand?.toLowerCase().includes(search) ||
+        product.category?.name?.toLowerCase().includes(search)
+      )
+    }
+    
+    return filtered
   }
 
   const fetchCategories = async () => {
@@ -139,9 +125,11 @@ const Product = () => {
 
 
 
-  const getFilteredProducts = () => {
-    return products || []
-  }
+
+
+  useEffect(() => {
+    setProducts(getFilteredProducts())
+  }, [allProducts, searchTerm, selectedCategory])
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6">
@@ -199,7 +187,7 @@ const Product = () => {
             </select>
           </div>
           <div className="text-sm text-gray-500 w-full lg:w-auto text-left lg:text-right">
-            {Array.isArray(products) ? products.length : 0} products found
+            {products.length} products found
           </div>
         </div>
       </div>
@@ -377,7 +365,7 @@ const Product = () => {
           </table>
         </div>
         
-        {(!Array.isArray(products) || products.length === 0) && (
+        {products.length === 0 && (
           <div className="text-center py-12">
             <div className="text-6xl mb-4">📦</div>
             <p className="text-gray-500 text-lg mb-2">

@@ -102,8 +102,12 @@ const Dashboard = () => {
         fetch('https://computer-b.vercel.app/api/orders/get')
       ]);
 
-      const categories = await categoriesRes.json()
+      const categoriesData = await categoriesRes.json()
       const ordersResponse = await ordersRes.json()
+      
+      // Ensure categories is always an array
+      const categories = Array.isArray(categoriesData) ? categoriesData : 
+                        (categoriesData?.categories || categoriesData?.data || [])
       
       // Fetch products separately to avoid blocking
       const productsRes = await fetch('https://computer-b.vercel.app/api/products/all')
@@ -160,7 +164,7 @@ const Dashboard = () => {
       setFilteredOrdersData(monthlyOrders)
       setFilteredSalesData(monthlySales)
       
-      setCategories(categories)
+      setCategories(Array.isArray(categories) ? categories : [])
       setStats(newStats)
     } catch (error) {
       console.error('Error fetching dashboard data:', error);

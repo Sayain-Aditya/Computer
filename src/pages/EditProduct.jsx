@@ -32,9 +32,12 @@ const EditProduct = () => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get('https://computer-b.vercel.app/api/categories/all')
-      setCategories(response.data)
+      const data = Array.isArray(response.data) ? response.data : 
+                   (response.data?.categories || response.data?.data || [])
+      setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+      setCategories([])
     }
   }
 
@@ -78,7 +81,9 @@ const EditProduct = () => {
   const fetchProduct = async () => {
     try {
       const response = await axios.get('https://computer-b.vercel.app/api/products/all')
-      const product = response.data.find(p => p._id === id)
+      const productsArray = Array.isArray(response.data) ? response.data : 
+                           (response.data?.products || response.data?.data || [])
+      const product = productsArray.find(p => p._id === id)
       
       if (!product) {
         toast.error('Product not found')

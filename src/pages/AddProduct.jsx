@@ -32,9 +32,12 @@ const AddProduct = () => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get('https://computer-b.vercel.app/api/categories/all')
-      setCategories(response.data)
+      const data = Array.isArray(response.data) ? response.data : 
+                   (response.data?.categories || response.data?.data || [])
+      setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+      setCategories([])
     }
   }
 

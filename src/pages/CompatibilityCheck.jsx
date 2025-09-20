@@ -9,14 +9,16 @@ const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, produc
   const [loading, setLoading] = useState(false)
   const [showConfirmModal, setShowConfirmModal] = useState(false)
   const [pendingProduct, setPendingProduct] = useState(null)
+  const [hasChecked, setHasChecked] = useState(false)
 
   useEffect(() => {
-    if (selectedProducts.length > 0 && compatibleProducts.length === 0) {
+    if (selectedProducts.length > 0 && !hasChecked) {
       fetchCompatibleProducts()
     } else if (selectedProducts.length === 0) {
       setCompatibleProducts([])
+      setHasChecked(false)
     }
-  }, [selectedProducts.length === 0 ? selectedProducts : []])
+  }, [selectedProducts.length, hasChecked])
 
   const fetchCompatibleProducts = async () => {
     try {
@@ -56,6 +58,7 @@ const CompatibilityCheck = ({ selectedProducts, onAddProduct, categories, produc
       
       console.log('Compatible products after filtering:', compatibleData.length)
       setCompatibleProducts(compatibleData)
+      setHasChecked(true)
       
       if (compatibleData.length === 0) {
         toast.info('No compatible products found')

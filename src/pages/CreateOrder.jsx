@@ -13,6 +13,7 @@ const CreateOrder = () => {
   const [selectedCategory, setSelectedCategory] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [selectedProducts, setSelectedProducts] = useState([])
+
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
     email: '',
@@ -28,7 +29,21 @@ const CreateOrder = () => {
   useEffect(() => {
     fetchProducts()
     fetchCategories()
+    loadCart()
   }, [])
+
+  const loadCart = async () => {
+    try {
+      const response = await axios.get('https://computer-b.vercel.app/api/cart/')
+      const cartItems = response.data.data.items.map(item => ({
+        ...item.product,
+        orderQuantity: item.quantity
+      }))
+      setSelectedProducts(cartItems)
+    } catch (error) {
+      console.error('Error loading cart:', error)
+    }
+  }
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -82,16 +97,24 @@ const CreateOrder = () => {
       }
       
       console.log('Final products array:', productsArray)
-      setProducts(productsArray)
+      setProducts(Array.isArray(productsArray) ? productsArray : [])
     } catch (error) {
       console.error('Error fetching products:', error)
       console.error('Error details:', error.response?.data)
       
-      // Fallback to /all endpoint if API fails
+      // Handle 404 as empty result (no products found)
+      if (error.response?.status === 404) {
+        setProducts([])
+        return
+      }
+      
+      // Fallback to /all endpoint for other errors
       try {
         console.log('Trying fallback to /all endpoint')
         const fallbackResponse = await axios.get('https://computer-b.vercel.app/api/products/all')
-        setProducts(fallbackResponse.data || [])
+        const fallbackData = Array.isArray(fallbackResponse.data) ? fallbackResponse.data : 
+                            (fallbackResponse.data?.products || fallbackResponse.data?.data || [])
+        setProducts(fallbackData)
       } catch (fallbackError) {
         console.error('Fallback also failed:', fallbackError)
         setProducts([])
@@ -102,9 +125,12 @@ const CreateOrder = () => {
   const fetchCategories = async () => {
     try {
       const response = await axios.get('https://computer-b.vercel.app/api/categories/all')
-      setCategories(response.data)
+      const data = Array.isArray(response.data) ? response.data : 
+                   (response.data?.categories || response.data?.data || [])
+      setCategories(data)
     } catch (error) {
       console.error('Error fetching categories:', error)
+      setCategories([])
     }
   }
 
@@ -116,7 +142,7 @@ const CreateOrder = () => {
 
 
 
-  const addToOrder = (product, quantity = 1, skipConfirm = false) => {
+  const addToOrder = async (product, quantity = 1, skipConfirm = false) => {
     const existingItem = selectedProducts.find(item => item._id === product._id)
     if (existingItem && !skipConfirm && quantity > 0) {
       setPendingProduct({ product, quantity })
@@ -124,31 +150,55 @@ const CreateOrder = () => {
       return
     }
     
-    if (existingItem) {
-      if (quantity < 0 && existingItem.orderQuantity + quantity <= 0) {
-        setSelectedProducts(selectedProducts.filter(item => item._id !== product._id))
-      } else {
-        setSelectedProducts(selectedProducts.map(item =>
-          item._id === product._id ? { ...item, orderQuantity: Math.max(1, item.orderQuantity + quantity) } : item
-        ))
-      }
-    } else if (quantity > 0) {
-      const newProducts = [...selectedProducts, { ...product, orderQuantity: quantity }]
-      setSelectedProducts(newProducts)
+    try {
+      const response = await axios.post('https://computer-b.vercel.app/api/cart/items', {
+        productId: product._id,
+        quantity: quantity
+      })
+      const cartItems = response.data.data.items.map(item => ({
+        ...item.product,
+        orderQuantity: item.quantity
+      }))
+      setSelectedProducts(cartItems)
+      toast.success(`${product.name} added to cart`)
+    } catch (error) {
+      console.error('Error updating cart:', error)
+      toast.error(`Failed to add ${product.name} to cart`)
     }
   }
 
-  const removeFromOrder = (productId) => {
-    setSelectedProducts(selectedProducts.filter(item => item._id !== productId))
+  const removeFromOrder = async (productId) => {
+    try {
+      const response = await axios.delete(`https://computer-b.vercel.app/api/cart/items/${productId}`)
+      const cartItems = response.data.data.items.map(item => ({
+        ...item.product,
+        orderQuantity: item.quantity
+      }))
+      setSelectedProducts(cartItems)
+    } catch (error) {
+      console.error('Error removing from cart:', error)
+      toast.error('Failed to remove item from cart')
+    }
   }
 
-  const updateQuantity = (productId, quantity) => {
-    if (quantity <= 0) {
-      removeFromOrder(productId)
-    } else {
-      setSelectedProducts(selectedProducts.map(item =>
-        item._id === productId ? { ...item, orderQuantity: quantity } : item
-      ))
+  const updateQuantity = async (productId, quantity) => {
+    try {
+      let response
+      if (quantity <= 0) {
+        response = await axios.delete(`https://computer-b.vercel.app/api/cart/items/${productId}`)
+      } else {
+        response = await axios.put(`https://computer-b.vercel.app/api/cart/items/${productId}`, {
+          quantity: quantity
+        })
+      }
+      const cartItems = response.data.data.items.map(item => ({
+        ...item.product,
+        orderQuantity: item.quantity
+      }))
+      setSelectedProducts(cartItems)
+    } catch (error) {
+      console.error('Error updating quantity:', error)
+      toast.error('Failed to update quantity')
     }
   }
 
@@ -237,7 +287,7 @@ const CreateOrder = () => {
       }
 
       toast.success('✅ Order created successfully!')
-      // Clear form
+      // Cart automatically cleared by backend
       setSelectedProducts([])
       setCustomerInfo({ name: '', email: '', phone: '', address: '' })
       // Navigate after a short delay
@@ -607,14 +657,14 @@ const CreateOrder = () => {
                             quantity: parseInt(item.orderQuantity),
                             price: parseFloat(item.sellingRate)
                           })),
-                          totalAmount: parseFloat(getTotalAmount().toFixed(2)),
-                          status: 'pending'
-                          // Let backend generate quoteId automatically
+                          totalAmount: parseFloat(getTotalAmount().toFixed(2))
                         }
 
                         try {
                           await axios.post('https://computer-b.vercel.app/api/orders/create', quotationData)
                           toast.success('Quotation generated and saved successfully!')
+                          // Cart automatically cleared by backend
+                          setSelectedProducts([])
                           setShowCartModal(false)
                           setTimeout(() => {
                             navigate('/quotation-list')

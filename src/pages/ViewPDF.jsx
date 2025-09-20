@@ -31,7 +31,8 @@ const ViewPDF = () => {
           return
         }
         
-        const allCategories = categoriesResponse.data
+        const allCategories = Array.isArray(categoriesResponse.data) ? categoriesResponse.data : 
+                              (categoriesResponse.data?.categories || categoriesResponse.data?.data || [])
         
         const productsWithNames = quotation.items?.map(item => {
           const product = item.product || {}
@@ -220,7 +221,7 @@ const ViewPDF = () => {
         </div>
       </div>
 
-      <style jsx global>{`
+      <style jsx>{`
         @media print {
           @page { margin: 0; size: A4; }
           body * { visibility: hidden; }

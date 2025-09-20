@@ -22,8 +22,8 @@ const QuotationList = () => {
   const fetchQuotations = async (search = '') => {
     try {
       const url = search 
-        ? `https://computer-b.vercel.app/api/orders/quotations/search?search=${encodeURIComponent(search)}`
-        : 'https://computer-b.vercel.app/api/orders/quotations/search'
+        ? `https://computer-b.vercel.app/api/orders/get?search=${encodeURIComponent(search)}&type=Quotation`
+        : 'https://computer-b.vercel.app/api/orders/get?type=Quotation'
       
       console.log('API URL:', url)
       const response = await axios.get(url)

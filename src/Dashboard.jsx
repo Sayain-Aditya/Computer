@@ -1,26 +1,23 @@
-import React, { useState, useEffect } from 'react';
-import {
-  Chart as ChartJS,
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement,
-} from 'chart.js';
-import { Bar, Doughnut } from 'react-chartjs-2';
+import React, { useState, useEffect, useMemo, lazy, Suspense } from 'react';
 import { formatIndianCurrency } from './utils/formatters';
 
-ChartJS.register(
-  CategoryScale,
-  LinearScale,
-  BarElement,
-  Title,
-  Tooltip,
-  Legend,
-  ArcElement
-);
+// Lazy load everything
+const ChartJS = lazy(() => import('chart.js'));
+const Bar = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Bar })));
+const Doughnut = lazy(() => import('react-chartjs-2').then(module => ({ default: module.Doughnut })));
+
+// Cache for API responses
+const cache = new Map();
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
+// Register charts lazily
+let chartsRegistered = false;
+const registerCharts = async () => {
+  if (chartsRegistered) return;
+  const { Chart, CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement } = await import('chart.js');
+  Chart.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
+  chartsRegistered = true;
+};
 
 const Dashboard = () => {
   const [stats, setStats] = useState({
@@ -37,11 +34,15 @@ const Dashboard = () => {
   const [selectedSalesCategory, setSelectedSalesCategory] = useState('');
   const [filteredOrdersData, setFilteredOrdersData] = useState(Array(12).fill(0));
   const [filteredSalesData, setFilteredSalesData] = useState(Array(12).fill(0));
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false); // Start with false for instant render
+  const [chartsLoading, setChartsLoading] = useState(true);
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    fetchDashboardData().finally(() => setLoading(false));
+    // Load data in background without blocking UI
+    fetchDashboardData();
+    // Register charts in parallel
+    registerCharts().then(() => setChartsLoading(false));
   }, []);
 
   useEffect(() => {
@@ -96,87 +97,120 @@ const Dashboard = () => {
 
   const fetchDashboardData = async () => {
     try {
-      // Fetch only essential data first
-      const [categoriesRes, ordersRes] = await Promise.all([
-        fetch('https://computer-b.vercel.app/api/categories/all'),
-        fetch('https://computer-b.vercel.app/api/orders/get')
-      ]);
+      setLoading(true);
+      
+      // Check cache first
+      const cacheKey = 'dashboard-data';
+      const cached = cache.get(cacheKey);
+      if (cached && Date.now() - cached.timestamp < CACHE_DURATION) {
+        const { categoriesData, ordersResponse, products } = cached.data;
+        processData(categoriesData, ordersResponse, products);
+        setLoading(false);
+        return;
+      }
 
-      const categoriesData = await categoriesRes.json()
-      const ordersResponse = await ordersRes.json()
-      
-      // Ensure categories is always an array
-      const categories = Array.isArray(categoriesData) ? categoriesData : 
-                        (categoriesData?.categories || categoriesData?.data || [])
-      
-      // Fetch products separately to avoid blocking
-      const productsRes = await fetch('https://computer-b.vercel.app/api/products/all')
-      const products = await productsRes.json()
-      
-      const orders = ordersResponse.orders || ordersResponse.data || []
-      setAllOrders(orders)
-      
-      // Process yearly orders data (exclude quotations)
-      const currentYear = new Date().getFullYear()
-      const monthlyOrders = Array(12).fill(0)
-      const monthlySales = Array(12).fill(0)
-      let totalOrdersCount = 0
-      let totalSalesAmount = 0
-
-      orders.forEach(order => {
-        // Skip quotations, only count actual orders
-        if (order.type === 'Quotation') return
-        
-        const orderDate = new Date(order.createdAt)
-        if (orderDate.getFullYear() === currentYear) {
-          const month = orderDate.getMonth()
-          monthlyOrders[month]++
-          totalOrdersCount++
-          
-          // Calculate actual total from items
-          const orderTotal = order.items?.reduce((total, item) => {
-            return total + ((item.price || 0) * (item.quantity || 0))
-          }, 0) || 0
-          monthlySales[month] += orderTotal
-          totalSalesAmount += orderTotal
+      // Fetch with proper error handling
+      const fetchData = async (url) => {
+        try {
+          const response = await fetch(url);
+          if (!response.ok) throw new Error(`HTTP ${response.status}`);
+          return await response.json();
+        } catch (error) {
+          console.warn(`Failed to fetch ${url}:`, error);
+          return null;
         }
-      })
+      };
 
-      // Process category-wise products with fallback
-      const categoryCount = {}
-      const productList = products?.products || products || []
-      if (Array.isArray(productList)) {
-        productList.forEach(product => {
-          const categoryName = product.category?.name || 'Uncategorized'
-          categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1
-        })
-      }
-
-      const newStats = {
-        totalCategories: categories.length,
-        yearlyOrders: monthlyOrders,
-        yearlySales: monthlySales,
-        categoryProducts: Object.entries(categoryCount),
-        totalYearlyOrders: totalOrdersCount,
-        totalYearlySales: totalSalesAmount
+      const [categoriesData, ordersResponse, products] = await Promise.all([
+        fetchData('https://computer-b.vercel.app/api/categories/all'),
+        fetchData('https://computer-b.vercel.app/api/orders/get'),
+        fetchData('https://computer-b.vercel.app/api/products/all')
+      ]);
+      
+      // Only cache if we have valid data
+      if (categoriesData || ordersResponse || products) {
+        cache.set(cacheKey, {
+          data: { categoriesData, ordersResponse, products },
+          timestamp: Date.now()
+        });
       }
       
-      setFilteredOrdersData(monthlyOrders)
-      setFilteredSalesData(monthlySales)
-      
-      setCategories(Array.isArray(categories) ? categories : [])
-      setStats(newStats)
+      processData(categoriesData, ordersResponse, products);
     } catch (error) {
       console.error('Error fetching dashboard data:', error);
-      setError('Failed to load dashboard data: ' + error.message);
+      // Don't show error if we have some cached data
+      if (!cache.has(cacheKey)) {
+        setError('Network error - using offline mode');
+      }
+    } finally {
+      setLoading(false);
     }
+  };
+  
+  const processData = (categoriesData, ordersResponse, products) => {
+    // Handle null/undefined data gracefully
+    const categories = categoriesData ? 
+      (Array.isArray(categoriesData) ? categoriesData : 
+       (categoriesData?.categories || categoriesData?.data || [])) : [];
+    
+    const orders = ordersResponse ? 
+      (ordersResponse.orders || ordersResponse.data || []) : [];
+    setAllOrders(orders);
+    
+    // Ultra-fast processing with minimal operations
+    const currentYear = new Date().getFullYear()
+    const monthlyOrders = new Array(12).fill(0)
+    const monthlySales = new Array(12).fill(0)
+    let totalOrdersCount = 0
+    let totalSalesAmount = 0
+
+    // Single loop for maximum performance
+    for (const order of orders) {
+      if (order.type === 'Quotation') continue;
+      
+      const orderDate = new Date(order.createdAt);
+      if (orderDate.getFullYear() !== currentYear) continue;
+      
+      const month = orderDate.getMonth();
+      monthlyOrders[month]++;
+      totalOrdersCount++;
+      
+      const orderTotal = order.items?.reduce((sum, item) => 
+        sum + (item.price || 0) * (item.quantity || 0), 0) || 0;
+      monthlySales[month] += orderTotal;
+      totalSalesAmount += orderTotal;
+    }
+
+    // Fast category processing with null safety
+    const categoryCount = {};
+    const productList = products ? (products?.products || products || []) : [];
+    if (Array.isArray(productList)) {
+      for (const product of productList) {
+        const categoryName = product?.category?.name || 'Uncategorized';
+        categoryCount[categoryName] = (categoryCount[categoryName] || 0) + 1;
+      }
+    }
+
+    const newStats = {
+      totalCategories: categories.length,
+      yearlyOrders: monthlyOrders,
+      yearlySales: monthlySales,
+      categoryProducts: Object.entries(categoryCount),
+      totalYearlyOrders: totalOrdersCount,
+      totalYearlySales: totalSalesAmount
+    };
+    
+    setFilteredOrdersData(monthlyOrders);
+    setFilteredSalesData(monthlySales);
+    setCategories(categories);
+    setStats(newStats);
   };
 
   const currentYear = new Date().getFullYear();
 
   const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
   
-  const ordersChartData = {
+  const ordersChartData = useMemo(() => ({
     labels: months,
     datasets: [{
       label: selectedOrderCategory ? `Orders - ${categories.find(c => c._id === selectedOrderCategory)?.name || 'Category'}` : 'Monthly Orders',
@@ -187,9 +221,9 @@ const Dashboard = () => {
       borderRadius: 8,
       borderSkipped: false,
     }],
-  };
+  }), [filteredOrdersData, selectedOrderCategory, categories]);
 
-  const salesChartData = {
+  const salesChartData = useMemo(() => ({
     labels: months,
     datasets: [{
       label: selectedSalesCategory ? `Sales - ${categories.find(c => c._id === selectedSalesCategory)?.name || 'Category'}` : 'Monthly Sales (₹)',
@@ -200,9 +234,9 @@ const Dashboard = () => {
       borderRadius: 8,
       borderSkipped: false,
     }],
-  };
+  }), [filteredSalesData, selectedSalesCategory, categories]);
 
-  const categoryChartData = {
+  const categoryChartData = useMemo(() => ({
     labels: stats.categoryProducts.map(([category]) => category),
     datasets: [{
       data: stats.categoryProducts.map(([, count]) => count),
@@ -214,7 +248,7 @@ const Dashboard = () => {
       borderColor: '#ffffff',
       hoverBorderWidth: 3,
     }],
-  };
+  }), [stats.categoryProducts]);
 
   const barChartOptions = {
     responsive: true,
@@ -287,66 +321,82 @@ const Dashboard = () => {
     cutout: '60%',
   };
 
-  if (loading) {
-    return (
-      <div className="p-4 sm:p-6">
-        <h1 className="text-2xl sm:text-3xl font-bold mb-6">Dashboard</h1>
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {[1,2,3,4].map(i => (
-            <div key={i} className="bg-white p-4 sm:p-6 rounded-lg shadow animate-pulse">
-              <div className="h-4 bg-gray-200 rounded mb-2"></div>
-              <div className="h-8 bg-gray-200 rounded"></div>
-            </div>
-          ))}
-        </div>
-        <div className="text-center text-gray-500">Loading dashboard...</div>
-      </div>
-    );
-  }
+  // Skeleton component for instant loading
+  const SkeletonCard = () => (
+    <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+      <div className={`h-4 bg-gray-200 rounded mb-2 ${loading ? 'animate-pulse' : ''}`}></div>
+      <div className={`h-8 bg-gray-200 rounded ${loading ? 'animate-pulse' : ''}`}></div>
+    </div>
+  );
+  
+  const SkeletonChart = () => (
+    <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100">
+      <div className={`h-6 bg-gray-200 rounded mb-4 w-1/3 ${chartsLoading ? 'animate-pulse' : ''}`}></div>
+      <div className={`h-48 sm:h-64 bg-gray-100 rounded ${chartsLoading ? 'animate-pulse' : ''}`}></div>
+    </div>
+  );
 
-  if (error) {
-    return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold mb-6">Dashboard</h1>
-        <div className="text-center text-red-600">{error}</div>
-        <div className="mt-4">
-          <button 
-            onClick={() => { setError(null); setLoading(true); fetchDashboardData().finally(() => setLoading(false)); }}
-            className="px-4 py-2 bg-blue-500 text-white rounded hover:bg-blue-600"
-          >
-            Retry
-          </button>
-        </div>
+  // Show error as notification, not blocking UI
+  const ErrorNotification = () => error ? (
+    <div className="mb-4 p-3 bg-yellow-100 border border-yellow-400 text-yellow-700 rounded">
+      <div className="flex justify-between items-center">
+        <span>{error}</span>
+        <button 
+          onClick={() => { setError(null); fetchDashboardData(); }}
+          className="ml-2 px-2 py-1 bg-yellow-500 text-white text-sm rounded hover:bg-yellow-600"
+        >
+          Retry
+        </button>
       </div>
-    );
-  }
+    </div>
+  ) : null;
 
   return (
     <div className="p-4 sm:p-6">
       <h1 className="text-2xl sm:text-3xl font-bold mb-6">Dashboard</h1>
+      <ErrorNotification />
       
       {/* Stats Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-8">
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Categories</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalYearlyOrders || 0}</p>
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
-          <p className="text-xl sm:text-3xl font-bold text-purple-600">{formatIndianCurrency(stats.totalYearlySales || 0)}</p>
-        </div>
-        <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
-          <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
-          <p className="text-2xl sm:text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
-        </div>
+        {loading ? (
+          <>  
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+            <SkeletonCard />
+          </>
+        ) : (
+          <>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Categories</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-blue-600">{stats.totalCategories}</p>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Orders (Yearly)</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-green-600">{stats.totalYearlyOrders || 0}</p>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Sales (Yearly)</h3>
+              <p className="text-xl sm:text-3xl font-bold text-purple-600">{formatIndianCurrency(stats.totalYearlySales || 0)}</p>
+            </div>
+            <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
+              <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
+            </div>
+          </>
+        )}
       </div>
 
       {/* Charts */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
+        {loading ? (
+          <>
+            <SkeletonChart />
+            <SkeletonChart />
+            <div className="lg:col-span-2"><SkeletonChart /></div>
+          </>
+        ) : (
+          <>
         <div className="bg-white p-4 sm:p-6 rounded-xl shadow-lg border border-gray-100">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-4 gap-2">
             <h3 className="text-lg sm:text-xl font-bold text-gray-800">Yearly Orders</h3>
@@ -372,7 +422,15 @@ const Dashboard = () => {
             </select>
           </div>
           <div className="h-48 sm:h-64">
-            <Bar data={ordersChartData} options={barChartOptions} />
+            {chartsLoading ? (
+              <div className="h-full bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <div className="text-gray-400">Loading chart...</div>
+              </div>
+            ) : (
+              <Suspense fallback={<div className="h-full bg-gray-100 rounded animate-pulse"></div>}>
+                <Bar data={ordersChartData} options={barChartOptions} />
+              </Suspense>
+            )}
           </div>
         </div>
         
@@ -401,7 +459,15 @@ const Dashboard = () => {
             </select>
           </div>
           <div className="h-48 sm:h-64">
-            <Bar data={salesChartData} options={barChartOptions} />
+            {chartsLoading ? (
+              <div className="h-full bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <div className="text-gray-400">Loading chart...</div>
+              </div>
+            ) : (
+              <Suspense fallback={<div className="h-full bg-gray-100 rounded animate-pulse"></div>}>
+                <Bar data={salesChartData} options={barChartOptions} />
+              </Suspense>
+            )}
           </div>
         </div>
         
@@ -414,9 +480,19 @@ const Dashboard = () => {
             </div>
           </div>
           <div className="h-48 sm:h-64">
-            <Doughnut data={categoryChartData} options={doughnutOptions} />
+            {chartsLoading ? (
+              <div className="h-full bg-gray-100 rounded animate-pulse flex items-center justify-center">
+                <div className="text-gray-400">Loading chart...</div>
+              </div>
+            ) : (
+              <Suspense fallback={<div className="h-full bg-gray-100 rounded animate-pulse"></div>}>
+                <Doughnut data={categoryChartData} options={doughnutOptions} />
+              </Suspense>
+            )}
           </div>
         </div>
+          </>
+        )}
       </div>
     </div>
   );

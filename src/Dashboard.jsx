@@ -28,6 +28,7 @@ const Dashboard = () => {
     totalYearlyOrders: 0,
     totalYearlySales: 0
   });
+  const [totalProducts, setTotalProducts] = useState(0);
   const [categories, setCategories] = useState([]);
   const [allOrders, setAllOrders] = useState([]);
   const [selectedOrderCategory, setSelectedOrderCategory] = useState('');
@@ -183,7 +184,12 @@ const Dashboard = () => {
 
     // Fast category processing with null safety
     const categoryCount = {};
-    const productList = products ? (products?.products || products || []) : [];
+    const productList = products?.data || products || [];
+    const productsCount = Array.isArray(productList) ? productList.length : 0;
+    
+    console.log('Products count from API:', productsCount);
+    setTotalProducts(productsCount);
+    
     if (Array.isArray(productList)) {
       for (const product of productList) {
         const categoryName = product?.category?.name || 'Uncategorized';
@@ -381,7 +387,7 @@ const Dashboard = () => {
             </div>
             <div className="bg-white p-4 sm:p-6 rounded-lg shadow">
               <h3 className="text-sm sm:text-lg font-semibold text-gray-600">Total Products</h3>
-              <p className="text-2xl sm:text-3xl font-bold text-orange-600">{Array.isArray(stats.categoryProducts) ? stats.categoryProducts.reduce((sum, [, count]) => sum + count, 0) : 0}</p>
+              <p className="text-2xl sm:text-3xl font-bold text-orange-600">{totalProducts}</p>
             </div>
           </>
         )}

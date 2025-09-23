@@ -368,7 +368,7 @@ const EditOrder = () => {
               className="w-full sm:w-auto px-4 py-3 border-2 border-gray-200 rounded-lg focus:outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-100 text-sm transition-all duration-200"
             >
               <option value="">🏷️ All Categories</option>
-              {categories.map(category => (
+              {Array.isArray(categories) && categories.map(category => (
                 <option key={category._id} value={category._id}>
                   {category.name}
                 </option>

@@ -24,6 +24,9 @@ const AddProduct = () => {
   const [newAttribute, setNewAttribute] = useState({ key: '', value: '' })
   const [bulkAttributes, setBulkAttributes] = useState('')
   const [showBulkInput, setShowBulkInput] = useState(false)
+  const [showAIPrompt, setShowAIPrompt] = useState(false)
+  const [aiPrompt, setAiPrompt] = useState('')
+  const [isGenerating, setIsGenerating] = useState(false)
 
   useEffect(() => {
     fetchCategories()
@@ -140,6 +143,111 @@ const AddProduct = () => {
       toast.error('No valid attributes found. Use format: key: value')
     }
   }
+
+  const generateAIAttributes = async () => {
+    if (!aiPrompt.trim()) {
+      toast.error('Please enter a product name or link')
+      return
+    }
+    
+    if (!formData.category) {
+      toast.error('Please select a category first')
+      return
+    }
+    
+    setIsGenerating(true)
+    try {
+      // First, get existing attributes from API
+      const attributesResponse = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${formData.category}/attributes`)
+      
+      let existingAttributes = {}
+      if (attributesResponse.data && attributesResponse.data.attributes) {
+        existingAttributes = attributesResponse.data.attributes
+      }
+      
+      const existingAttrNames = Object.keys(existingAttributes)
+      
+      if (existingAttrNames.length === 0) {
+        toast.error('No attributes found for this category')
+        return
+      }
+      
+      // Use AI to generate values for existing attributes based on product details
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+        contents: [{
+          parts: [{
+            text: `Analyze this product: "${aiPrompt}"
+
+If this is a product URL/link, extract the product information from it.
+If this is a product name/model, use your knowledge of that specific product.
+
+Generate accurate values ONLY for these specific attributes: ${existingAttrNames.join(', ')}
+
+Rules:
+- Return ONLY the attributes listed above
+- Format: "attributeName: actualValue"
+- Each pair on a new line
+- Use REAL specifications for the specific product mentioned
+- Be as accurate as possible to the actual product
+- If an attribute doesn't apply, use "N/A"
+- No explanations or extra text
+
+Example format:
+Processor: Intel Core i7-12700H
+RAM: 16GB DDR4
+Storage: 512GB NVMe SSD`
+          }]
+        }]
+      }, {
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      })
+      
+      const generatedText = response.data.candidates[0].content.parts[0].text
+      const lines = generatedText.split('\n')
+      const aiAttributes = {}
+      
+      lines.forEach(line => {
+        const trimmedLine = line.trim()
+        if (trimmedLine && trimmedLine.includes(':')) {
+          const [key, ...valueParts] = trimmedLine.split(':')
+          const value = valueParts.join(':').trim().replace(/\s+/g, '')
+          if (key.trim() && value && existingAttrNames.includes(key.trim())) {
+            aiAttributes[key.trim()] = value
+          }
+        }
+      })
+      
+      // Merge with existing attributes
+      const finalAttributes = { ...existingAttributes, ...aiAttributes }
+      
+      setFormData(prev => ({
+        ...prev,
+        attributes: {
+          ...prev.attributes,
+          ...finalAttributes
+        }
+      }))
+      
+      setShowAIPrompt(false)
+      setAiPrompt('')
+      toast.success(`Generated values for ${Object.keys(aiAttributes).length} attributes based on product details`)
+    } catch (error) {
+      console.error('Error generating AI attributes:', error)
+      if (error.response?.status === 429) {
+        toast.error('Rate limit exceeded. Please wait a moment and try again.')
+      } else if (error.response?.status === 400) {
+        toast.error('Invalid API key. Please check your Gemini API key.')
+      } else {
+        toast.error('Failed to generate attributes. Please try again.')
+      }
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
+
 
   return (
     <motion.div 
@@ -349,6 +457,56 @@ const AddProduct = () => {
                 >
                   Bulk Add
                 </button>
+                <button
+                  type="button"
+                  onClick={() => setShowAIPrompt(true)}
+                  className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded hover:from-green-600 hover:to-blue-600 whitespace-nowrap"
+                >
+                  ✨ Gemini AI
+                </button>
+              </div>
+            )}
+
+            {showAIPrompt && (
+              <div className="mb-4 p-4 bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded">
+                <label className="block text-sm font-medium text-green-700 mb-2">
+                  🤖 Enter product name, model, or link for accurate AI-generated attributes
+                </label>
+                <input
+                  type="text"
+                  value={aiPrompt}
+                  onChange={(e) => setAiPrompt(e.target.value)}
+                  placeholder="e.g., ASUS ROG Strix G15 G513QM, Dell XPS 13 9310, or product URL"
+                  className="w-full px-3 py-2 border border-green-300 rounded focus:outline-none focus:border-green-500 text-sm mb-2"
+                  disabled={isGenerating}
+                />
+                <p className="text-xs text-green-600 mb-3">💡 Tip: Paste a product link or specific model name for most accurate specifications</p>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={generateAIAttributes}
+                    disabled={isGenerating}
+                    className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded hover:from-green-700 hover:to-blue-700 text-sm disabled:opacity-50"
+                  >
+                    {isGenerating ? '🔄 Generating...' : '✨ Generate Attributes'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setAiPrompt('')}
+                    className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 text-sm"
+                    disabled={isGenerating}
+                  >
+                    Clear
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setShowAIPrompt(false)}
+                    className="px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600 text-sm"
+                    disabled={isGenerating}
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
 

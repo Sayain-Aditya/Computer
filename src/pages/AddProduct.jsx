@@ -149,6 +149,118 @@ const AddProduct = () => {
     }
   }
 
+  const generateAll = async () => {
+    if (!aiPrompt.trim() && !selectedImage) {
+      toast.error('Please enter a product name/link or select an image')
+      return
+    }
+    
+    setIsGenerating(true)
+    try {
+      // Step 1: Extract basic product info
+      const basicResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+        contents: [{
+          parts: [{
+            text: `Extract basic info from: "${aiPrompt}"\n\nReturn only:\nProduct Name: [full product name]\nBrand: [brand name]\nModel Number: [model/part number]\nWarranty: [warranty period]\n\nBe concise and accurate.`
+          }]
+        }]
+      }, {
+        headers: { 'Content-Type': 'application/json' }
+      })
+      
+      const basicText = basicResponse.data.candidates[0].content.parts[0].text
+      const basicLines = basicText.split('\n')
+      let productInfo = {}
+      
+      basicLines.forEach(line => {
+        const trimmedLine = line.trim()
+        if (trimmedLine && trimmedLine.includes(':')) {
+          const [key, ...valueParts] = trimmedLine.split(':')
+          const value = valueParts.join(':').trim()
+          const cleanKey = key.trim()
+          
+          if (cleanKey === 'Product Name' && value) {
+            productInfo.name = value
+          } else if (cleanKey === 'Brand' && value) {
+            productInfo.brand = value
+          } else if (cleanKey === 'Model Number' && value) {
+            productInfo.modelNumber = value
+          } else if (cleanKey === 'Warranty' && value) {
+            productInfo.warranty = value
+          }
+        }
+      })
+      
+      // Step 2: Generate attributes if category is selected
+      let aiAttributes = {}
+      let finalAttributes = {}
+      
+      if (formData.category) {
+        const attributesResponse = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${formData.category}/attributes`)
+        
+        let existingAttributes = {}
+        if (attributesResponse.data && attributesResponse.data.attributes) {
+          existingAttributes = attributesResponse.data.attributes
+        }
+        
+        const existingAttrNames = Object.keys(existingAttributes)
+        
+        if (existingAttrNames.length > 0) {
+          const attrResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+            contents: [{
+              parts: [{
+                text: `Analyze this product: "${aiPrompt}"\n\nGenerate accurate values ONLY for these attributes: ${existingAttrNames.join(', ')}\n\nFormat: "attributeName: actualValue"\nEach pair on a new line\nUse REAL specifications\nIf an attribute doesn't apply, use "N/A"`
+              }]
+            }]
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          })
+          
+          const attrText = attrResponse.data.candidates[0].content.parts[0].text
+          const attrLines = attrText.split('\n')
+          
+          attrLines.forEach(line => {
+            const trimmedLine = line.trim()
+            if (trimmedLine && trimmedLine.includes(':')) {
+              const [key, ...valueParts] = trimmedLine.split(':')
+              const value = valueParts.join(':').trim()
+              if (key.trim() && value && existingAttrNames.includes(key.trim())) {
+                aiAttributes[key.trim()] = value
+              }
+            }
+          })
+          
+          finalAttributes = { ...existingAttributes, ...aiAttributes }
+        }
+      }
+      
+      // Update form data
+      setFormData(prev => ({
+        ...prev,
+        ...productInfo,
+        attributes: {
+          ...prev.attributes,
+          ...finalAttributes
+        }
+      }))
+      
+      setShowAIPrompt(false)
+      setAiPrompt('')
+      setSelectedImage(null)
+      
+      const message = formData.category 
+        ? `Auto-filled product details and ${Object.keys(aiAttributes).length} attributes`
+        : 'Auto-filled product details (select category for attributes)'
+      toast.success(message)
+      
+    } catch (error) {
+      console.error('Error generating:', error)
+      toast.error('Failed to generate product info')
+    } finally {
+      setIsGenerating(false)
+    }
+  }
+
   const generateAIAttributes = async () => {
     if (!aiPrompt.trim() && !selectedImage) {
       toast.error('Please enter a product name/link or select an image')
@@ -196,11 +308,26 @@ const AddProduct = () => {
         })
       }
       
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
-        contents: [{ parts: requestParts }]
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      })
+      let response
+      let retries = 3
+      
+      for (let i = 0; i < retries; i++) {
+        try {
+          response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+            contents: [{ parts: requestParts }]
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          })
+          break
+        } catch (retryError) {
+          if (retryError.response?.status === 503 && i < retries - 1) {
+            toast.info(`Model overloaded, retrying in ${(i + 1) * 2} seconds...`)
+            await new Promise(resolve => setTimeout(resolve, (i + 1) * 2000))
+          } else {
+            throw retryError
+          }
+        }
+      }
       
       const generatedText = response.data.candidates[0].content.parts[0].text
       const lines = generatedText.split('\n')
@@ -326,7 +453,7 @@ const AddProduct = () => {
     try {
       const base64Image = imageData.split(',')[1]
       
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         contents: [{
           parts: [
             {
@@ -376,21 +503,26 @@ const AddProduct = () => {
       
       toast.info('🔍 Searching internet for product specifications...')
       
-      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+      const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
         contents: [{
           parts: [{
             text: `Find complete specifications for: "${productName}"
 
-Search official websites, Amazon, Flipkart for these attributes: ${existingAttrNames.join(', ')}
+Extract:
+1. Product Details:
+- Product Name: [full name]
+- Brand: [brand]
+- Model Number: [model]
+- Warranty: [warranty period]
+- Quantity: [typical stock quantity, default 10]
+- Selling Rate: [market price in rupees]
+- Cost Rate: [wholesale/cost price in rupees]
 
-Return format:
-attributeName: value
+2. Attributes: ${existingAttrNames.join(', ')}
 
-Rules:
-- Give exact values only (example: "16GB" not "Up to 16GB")
-- No explanations or parentheses
-- Find ALL attributes if available
-- Use "N/A" only if truly not found`
+Format each as: "Field: value"
+Give exact values only
+Use "N/A" only if truly not found`
           }]
         }]
       }, {
@@ -400,14 +532,33 @@ Rules:
       const generatedText = response.data.candidates[0].content.parts[0].text
       const lines = generatedText.split('\n')
       const aiAttributes = {}
+      let productInfo = {}
       
       lines.forEach(line => {
         const trimmedLine = line.trim()
         if (trimmedLine && trimmedLine.includes(':')) {
           const [key, ...valueParts] = trimmedLine.split(':')
           const value = valueParts.join(':').trim()
-          if (key.trim() && value && existingAttrNames.includes(key.trim())) {
-            aiAttributes[key.trim()] = value
+          const cleanKey = key.trim()
+          
+          if (cleanKey && value && value !== 'N/A') {
+            if (cleanKey === 'Product Name') {
+              productInfo.name = value
+            } else if (cleanKey === 'Brand') {
+              productInfo.brand = value
+            } else if (cleanKey === 'Model Number') {
+              productInfo.modelNumber = value
+            } else if (cleanKey === 'Warranty') {
+              productInfo.warranty = value
+            } else if (cleanKey === 'Quantity') {
+              productInfo.quantity = parseInt(value) || 10
+            } else if (cleanKey === 'Selling Rate') {
+              productInfo.sellingRate = parseFloat(value.replace(/[^\d.]/g, '')) || 0
+            } else if (cleanKey === 'Cost Rate') {
+              productInfo.costRate = parseFloat(value.replace(/[^\d.]/g, '')) || 0
+            } else if (existingAttrNames.includes(cleanKey)) {
+              aiAttributes[cleanKey] = value
+            }
           }
         }
       })
@@ -416,13 +567,14 @@ Rules:
       
       setFormData(prev => ({
         ...prev,
+        ...productInfo,
         attributes: {
           ...prev.attributes,
           ...finalAttributes
         }
       }))
       
-      toast.success(`🌐 Found ${Object.keys(aiAttributes).length} specifications from internet sources`)
+      toast.success(`🌐 Auto-filled product details and ${Object.keys(aiAttributes).length} specifications`)
     } catch (error) {
       console.error('Error generating attributes:', error)
       toast.error('Failed to fetch specifications from internet')
@@ -644,7 +796,7 @@ Rules:
                   onClick={() => setShowAIPrompt(true)}
                   className="px-4 py-2 bg-gradient-to-r from-green-500 to-blue-500 text-white rounded hover:from-green-600 hover:to-blue-600 whitespace-nowrap"
                 >
-                  ✨ Gemini AI
+                  ✨ Shine Infosolutions AI
                 </button>
               </div>
             )}
@@ -664,7 +816,7 @@ Rules:
                   disabled={isGenerating}
                 />
                 
-                <div className="flex gap-2 mb-3">
+                {/* <div className="flex gap-2 mb-3">
                   <input
                     type="file"
                     ref={fileInputRef}
@@ -695,7 +847,7 @@ Rules:
                     </svg>
                     Camera
                   </button>
-                </div>
+                </div> */}
                 
                 {selectedImage && (
                   <div className="mb-3">
@@ -727,11 +879,11 @@ Rules:
                 <div className="flex gap-2">
                   <button
                     type="button"
-                    onClick={generateAIAttributes}
+                    onClick={generateAll}
                     disabled={isGenerating}
                     className="px-4 py-2 bg-gradient-to-r from-green-600 to-blue-600 text-white rounded hover:from-green-700 hover:to-blue-700 text-sm disabled:opacity-50"
                   >
-                    {isGenerating ? '🔄 Generating...' : '✨ Generate Attributes'}
+                    {isGenerating ? '🔄 Generating...' : '✨ Generate'}
                   </button>
                   <button
                     type="button"

@@ -202,6 +202,17 @@ const CreateOrder = () => {
     }
   }
 
+  const clearCart = async () => {
+    try {
+      await axios.delete('https://computer-b.vercel.app/api/cart')
+      setSelectedProducts([])
+      toast.success('Cart cleared successfully')
+    } catch (error) {
+      console.error('Error clearing cart:', error)
+      toast.error('Failed to clear cart')
+    }
+  }
+
   const getTotalAmount = () => {
     return selectedProducts.reduce((total, item) => total + (item.sellingRate * item.orderQuantity), 0)
   }
@@ -604,19 +615,20 @@ const CreateOrder = () => {
                     </div>
                   </div>
 
-                  <div className="flex flex-col sm:flex-row gap-3">
-                    <motion.button
-                      onClick={() => {
-                        handleSubmitOrder()
-                        setShowCartModal(false)
-                      }}
-                      disabled={selectedProducts.length === 0}
-                      className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
-                      whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
-                      whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
-                    >
-                      🛍️ Create Order
-                    </motion.button>
+                  <div className="flex flex-col gap-3">
+                    <div className="flex gap-3">
+                      <motion.button
+                        onClick={() => {
+                          handleSubmitOrder()
+                          setShowCartModal(false)
+                        }}
+                        disabled={selectedProducts.length === 0}
+                        className="flex-1 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold rounded-lg hover:from-blue-700 hover:to-blue-800 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                        whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                        whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                      >
+                        🛍️ Create Order
+                      </motion.button>
                     <motion.button
                       onClick={async () => {
                         // Validation for quotation
@@ -691,6 +703,16 @@ const CreateOrder = () => {
                       whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
                     >
                       📄 Generate Quote
+                    </motion.button>
+                    </div>
+                    <motion.button
+                      onClick={clearCart}
+                      disabled={selectedProducts.length === 0}
+                      className="w-full px-6 py-3 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed text-sm shadow-lg transition-all duration-200"
+                      whileHover={{ scale: selectedProducts.length === 0 ? 1 : 1.02 }}
+                      whileTap={{ scale: selectedProducts.length === 0 ? 1 : 0.98 }}
+                    >
+                      🗑️ Clear Cart
                     </motion.button>
                   </div>
                 </div>

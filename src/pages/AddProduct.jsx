@@ -157,16 +157,32 @@ const AddProduct = () => {
     
     setIsGenerating(true)
     try {
-      // Step 1: Extract basic product info
-      const basicResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
-        contents: [{
-          parts: [{
-            text: `Extract basic info from: "${aiPrompt}"\n\nReturn only:\nProduct Name: [full product name]\nBrand: [brand name]\nModel Number: [model/part number]\nWarranty: [warranty period]\n\nBe concise and accurate.`
-          }]
-        }]
-      }, {
-        headers: { 'Content-Type': 'application/json' }
-      })
+      // Step 1: Extract basic product info with retry logic
+      let basicResponse
+      let retries = 5
+      
+      for (let i = 0; i < retries; i++) {
+        try {
+          basicResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+            contents: [{
+              parts: [{
+                text: `Extract basic info from: "${aiPrompt}"\n\nReturn only:\nProduct Name: [full product name]\nBrand: [brand name]\nModel Number: [model/part number]\nWarranty: [warranty period]\n\nBe concise and accurate.`
+              }]
+            }]
+          }, {
+            headers: { 'Content-Type': 'application/json' }
+          })
+          break
+        } catch (retryError) {
+          if (retryError.response?.status === 503 && i < retries - 1) {
+            const delay = (i + 1) * 3
+            toast.info(`Model overloaded, retrying in ${delay} seconds... (${i + 1}/${retries})`)
+            await new Promise(resolve => setTimeout(resolve, delay * 1000))
+          } else {
+            throw retryError
+          }
+        }
+      }
       
       const basicText = basicResponse.data.candidates[0].content.parts[0].text
       const basicLines = basicText.split('\n')
@@ -196,16 +212,25 @@ const AddProduct = () => {
       let finalAttributes = {}
       
       if (formData.category) {
-        const attributesResponse = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${formData.category}/attributes`)
-        
         let existingAttributes = {}
-        if (attributesResponse.data && attributesResponse.data.attributes) {
-          existingAttributes = attributesResponse.data.attributes
+        let existingAttrNames = []
+        
+        try {
+          const attributesResponse = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${formData.category}/attributes`)
+          if (attributesResponse.data && attributesResponse.data.attributes) {
+            existingAttributes = attributesResponse.data.attributes
+          }
+          existingAttrNames = Object.keys(existingAttributes)
+        } catch (attrError) {
+          // 404 means no attributes exist for this category - that's fine
+          if (attrError.response?.status !== 404) {
+            console.error('Error fetching attributes:', attrError)
+          }
+          existingAttrNames = []
         }
         
-        const existingAttrNames = Object.keys(existingAttributes)
-        
         if (existingAttrNames.length > 0) {
+          // Use existing backend attributes
           const attrResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
             contents: [{
               parts: [{
@@ -231,6 +256,49 @@ const AddProduct = () => {
           })
           
           finalAttributes = { ...existingAttributes, ...aiAttributes }
+        } else {
+          // No backend attributes - generate both names and values with retry logic
+          let newAttrResponse
+          
+          for (let i = 0; i < retries; i++) {
+            try {
+              newAttrResponse = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+                contents: [{
+                  parts: [{
+                    text: `Generate relevant technical attributes and values for this product: "${aiPrompt}"\n\nCreate 8-12 important technical specifications\n\nFormat: "attributeName: actualValue"\nEach pair on a new line\nUse REAL specifications\nInclude attributes like: Processor, RAM, Storage, Graphics, Display, etc.`
+                  }]
+                }]
+              }, {
+                headers: { 'Content-Type': 'application/json' }
+              })
+              break
+            } catch (retryError) {
+              if (retryError.response?.status === 503 && i < retries - 1) {
+                const delay = (i + 1) * 3
+                toast.info(`Model overloaded, retrying in ${delay} seconds... (${i + 1}/${retries})`)
+                await new Promise(resolve => setTimeout(resolve, delay * 1000))
+              } else {
+                throw retryError
+              }
+            }
+          }
+          
+          const newAttrText = newAttrResponse.data.candidates[0].content.parts[0].text
+          const newAttrLines = newAttrText.split('\n')
+          
+          newAttrLines.forEach(line => {
+            const trimmedLine = line.trim()
+            if (trimmedLine && trimmedLine.includes(':')) {
+              const [key, ...valueParts] = trimmedLine.split(':')
+              const value = valueParts.join(':').trim().replace(/\*\*/g, '').replace(/\*/g, '')
+              const cleanKey = key.trim().replace(/\*\*/g, '').replace(/\*/g, '')
+              if (cleanKey && value && value !== 'N/A') {
+                aiAttributes[cleanKey] = value
+              }
+            }
+          })
+          
+          finalAttributes = aiAttributes
         }
       }
       

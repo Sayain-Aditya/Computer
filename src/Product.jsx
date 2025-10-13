@@ -177,6 +177,14 @@ const Product = () => {
                 📊 Export CSV
               </motion.button>
               <motion.button 
+                onClick={() => navigate('/bulk-import')}
+                className="px-6 py-3 bg-blue-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                📥 Bulk Import
+              </motion.button>
+              <motion.button 
                 onClick={() => navigate('/add-product')}
                 className="px-6 py-3 bg-gray-800 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
                 whileHover={{ scale: 1.02, y: -1 }}

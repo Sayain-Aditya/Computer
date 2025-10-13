@@ -17,6 +17,7 @@ import SharedQuotation from "./pages/SharedQuotation";
 import SharedOrder from "./pages/SharedOrder";
 import ViewPDF from "./pages/ViewPDF";
 import OrderPDF from "./pages/OrderPDF";
+import BulkImport from "./pages/BulkImport";
 
 function AppContent() {
   const [sidebarOpen, setSidebarOpen] = useState(window.innerWidth >= 1024)
@@ -68,6 +69,7 @@ function AppContent() {
           <Route path="/edit-order/:id" element={<div className="p-2 sm:p-4 lg:p-6"><EditOrder /></div>} />
           <Route path="/quotation" element={<div className="p-2 sm:p-4 lg:p-6"><Quotation /></div>} />
           <Route path="/quotation-list" element={<div className="p-2 sm:p-4 lg:p-6"><QuotationList /></div>} />
+          <Route path="/bulk-import" element={<div className="p-2 sm:p-4 lg:p-6"><BulkImport /></div>} />
           <Route path="/view-pdf/:id" element={<ViewPDF />} />
           <Route path="/order-pdf/:id" element={<OrderPDF />} />
         </Routes>

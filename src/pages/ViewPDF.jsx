@@ -99,7 +99,22 @@ const ViewPDF = () => {
           <button 
             onClick={() => {
               const shareableUrl = `${window.location.origin}/shared-quotation/${id}`
-              const message = `Computer Shop Quotation\n\nCustomer: ${quotationData.customer.name}\nTotal: ₹${quotationData.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+              let message = `🏪 *Computer Shop Quotation*\n\n`
+              message += `👤 *Customer:* ${quotationData.customer.name}\n`
+              message += `📧 *Email:* ${quotationData.customer.email}\n`
+              message += `📱 *Phone:* ${quotationData.customer.phone}\n\n`
+              message += `📋 *Items:*\n`
+              
+              quotationData.products.forEach((item, index) => {
+                message += `${index + 1}. ${item.name}\n`
+                message += `   Qty: ${item.orderQuantity} | Rate: ₹${formatIndianNumber(item.sellingRate)}\n`
+              })
+              
+              message += `\n💰 *Total Amount: ₹${formatIndianNumber(quotationData.totalAmount?.toFixed(2))}*\n\n`
+              message += `📅 Date: ${new Date(quotationData.createdAt).toLocaleDateString()}\n`
+              message += `🔗 View PDF: ${shareableUrl}\n`
+              message += `🙏 Thank you for your business!`
+              
               const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
               window.open(whatsappUrl, '_blank')
             }}
@@ -136,7 +151,6 @@ const ViewPDF = () => {
             <div className="flex flex-col items-center">
               <img src="/logo.jpg" alt="Company Logo" className="w-24 h-24 mb-2" />
               <div className="text-center">
-                <p className="text-sm text-gray-600">Invoice #</p>
                 <p className="text-xl font-bold text-gray-800">{quotationData.quoteId}</p>
               </div>
             </div>

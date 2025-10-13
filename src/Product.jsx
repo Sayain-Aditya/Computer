@@ -70,7 +70,9 @@ const Product = () => {
       }
       
       console.log('Final products array:', productsArray)
-      setProducts(productsArray)
+      // Sort products by creation date (newest first)
+      const sortedProducts = productsArray.sort((a, b) => new Date(b.createdAt || b._id) - new Date(a.createdAt || a._id))
+      setProducts(sortedProducts)
       setCurrentPage(page)
     } catch (error) {
       console.error('Error fetching products:', error)

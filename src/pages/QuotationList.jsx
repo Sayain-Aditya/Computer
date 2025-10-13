@@ -137,7 +137,7 @@ const QuotationList = () => {
   }
 
   return (
-    <div className="max-w-7xl mx-auto px-4 sm:px-6">
+    <div className="max-w-7xl mx-auto px-4 sm:px-6 overflow-x-hidden">
       <div className="mb-8">
         <div className="bg-gradient-to-r from-slate-50 to-gray-100 rounded-2xl p-4 sm:p-8 border border-gray-200">
           <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
@@ -234,7 +234,24 @@ const QuotationList = () => {
               <button 
                 onClick={() => {
                   const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
-                  const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
+                  let message = `🏪 *Computer Shop Quotation*\n\n`
+                  message += `👤 *Customer:* ${quotation.customerName}\n`
+                  message += `📧 *Email:* ${quotation.customerEmail}\n`
+                  message += `📱 *Phone:* ${quotation.customerPhone}\n\n`
+                  message += `📋 *Items:*\n`
+                  
+                  if (quotation.items && quotation.items.length > 0) {
+                    quotation.items.forEach((item, index) => {
+                      message += `${index + 1}. ${item.name || item.product?.name || 'Product'}\n`
+                      message += `   Qty: ${item.quantity} | Rate: ₹${formatIndianNumber(item.price)}\n`
+                    })
+                  }
+                  
+                  message += `\n💰 *Total Amount: ₹${formatIndianNumber(quotation.totalAmount?.toFixed(2))}*\n\n`
+                  message += `📅 Date: ${new Date(quotation.createdAt).toLocaleDateString()}\n`
+                  message += `🔗 View PDF: ${shareableUrl}\n`
+                  message += `🙏 Thank you for your business!`
+                  
                   const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
                   window.open(whatsappUrl, '_blank')
                 }}
@@ -259,101 +276,115 @@ const QuotationList = () => {
         ))}
       </div>
 
-      {/* Desktop Table View */}
-      <div className="hidden md:block bg-white border border-gray-200 rounded-2xl shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead className="bg-slate-50">
-              <tr>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Quote ID</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Customer</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Items</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Total</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Date</th>
-                <th className="px-6 py-4 text-left text-xs font-medium text-gray-600 uppercase tracking-wider">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-100">
-              {quotations.map((quotation, index) => (
-                <tr 
-                  key={quotation._id}
-                  className="hover:bg-gray-50"
-                >
-                  <td className="px-6 py-4">
-                    <div className="text-sm font-medium text-gray-800">{quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}</div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div>
-                      <div className="text-sm font-medium text-gray-800">{quotation.customerName}</div>
-                      <div className="text-xs text-gray-500">{quotation.customerEmail}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded-full">
-                      {quotation.items?.length || 0} items
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-sm font-semibold text-gray-800">{formatIndianCurrency(quotation.totalAmount || 0)}</span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <select
-                      value={quotation.status || 'Pending'}
-                      onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 focus:ring-2 focus:ring-blue-500 cursor-pointer ${
-                        quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
-                        'bg-amber-50 text-amber-600'
-                      }`}
-                    >
-                      <option value="Pending">Pending</option>
-                      <option value="Confirmed">Confirmed</option>
-                    </select>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-gray-600">
-                    {new Date(quotation.createdAt).toLocaleDateString()}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex gap-2">
-                      <button 
-                        onClick={() => navigate(`/view-pdf/${quotation._id}`)}
-                        className="px-3 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200"
-                      >
-                        View PDF
-                      </button>
-                      <button 
-                        onClick={() => {
-                          const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
-                          const message = `Computer Shop Quotation\n\nCustomer: ${quotation.customerName}\nTotal: ₹${quotation.totalAmount?.toFixed(2)}\n\nView PDF: ${shareableUrl}`
-                          const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
-                          window.open(whatsappUrl, '_blank')
-                        }}
-                        className="px-3 py-1 bg-green-100 text-green-700 text-xs font-medium rounded-lg hover:bg-green-200"
-                      >
-                        Share
-                      </button>
-                      <button 
-                        onClick={() => navigate(`/edit-order/${quotation._id}`)}
-                        className="px-3 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded-lg hover:bg-amber-100"
-                      >
-                        Edit
-                      </button>
-                      <button 
-                        onClick={() => { setQuotationToDelete(quotation._id); setShowDeleteModal(true); }}
-                        className="px-3 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded-lg hover:bg-rose-100"
-                      >
-                        Delete
-                      </button>
-                    </div>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+      {/* Desktop Card View */}
+      <div className="hidden md:block">
+        {/* Table Headers */}
+        <div className="bg-slate-50 rounded-t-xl p-4 border border-gray-200 border-b-0">
+          <div className="grid grid-cols-12 gap-2 text-xs font-medium text-gray-600 uppercase tracking-wider">
+            <div className="col-span-2">Quote ID</div>
+            <div className="col-span-2">Customer</div>
+            <div className="col-span-1">Items</div>
+            <div className="col-span-2">Total</div>
+            <div className="col-span-1">Status</div>
+            <div className="col-span-1">Date</div>
+            <div className="col-span-3">Actions</div>
+          </div>
         </div>
-
+        
+        <div className="space-y-0 border border-gray-200 rounded-b-xl overflow-hidden">
+        {quotations.map((quotation, index) => (
+          <div
+            key={quotation._id}
+            className={`p-4 hover:bg-gray-50 border-b border-gray-200 last:border-b-0 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}
+          >
+            <div className="grid grid-cols-12 gap-2 items-center">
+              <div className="col-span-2 text-sm font-medium text-gray-800 truncate">
+                {quotation.quoteId || `#QT-${quotation._id?.slice(-6)}` || 'N/A'}
+              </div>
+              <div className="col-span-2">
+                <div className="text-sm font-medium text-gray-800 truncate">{quotation.customerName}</div>
+                <div className="text-xs text-gray-500 truncate">{quotation.customerEmail}</div>
+              </div>
+              <div className="col-span-1">
+                <span className="text-xs bg-slate-100 text-slate-600 px-1 py-1 rounded">
+                  {quotation.items?.length || 0}
+                </span>
+              </div>
+              <div className="col-span-2 text-sm font-semibold text-gray-800 truncate">
+                {formatIndianCurrency(quotation.totalAmount || 0)}
+              </div>
+              <div className="col-span-1">
+                <select
+                  value={quotation.status || 'Pending'}
+                  onChange={(e) => handleStatusChange(quotation._id, e.target.value)}
+                  className={`w-full px-1 py-1 rounded text-xs font-medium border-0 focus:ring-1 focus:ring-blue-500 cursor-pointer ${
+                    quotation.status === 'Confirmed' ? 'bg-emerald-50 text-emerald-600' :
+                    'bg-amber-50 text-amber-600'
+                  }`}
+                >
+                  <option value="Pending">Pending</option>
+                  <option value="Confirmed">Confirmed</option>
+                </select>
+              </div>
+              <div className="col-span-1 text-xs text-gray-600">
+                {new Date(quotation.createdAt).toLocaleDateString()}
+              </div>
+              <div className="col-span-3 flex gap-1 flex-wrap">
+                <button 
+                  onClick={() => navigate(`/view-pdf/${quotation._id}`)}
+                  className="px-2 py-1 bg-blue-100 text-blue-700 text-xs font-medium rounded hover:bg-blue-200"
+                >
+                  PDF
+                </button>
+                <button 
+                  onClick={() => {
+                    const shareableUrl = `${window.location.origin}/shared-quotation/${quotation._id}`
+                    let message = `🏪 *Computer Shop Quotation*\n\n`
+                    message += `👤 *Customer:* ${quotation.customerName}\n`
+                    message += `📧 *Email:* ${quotation.customerEmail}\n`
+                    message += `📱 *Phone:* ${quotation.customerPhone}\n\n`
+                    message += `📋 *Items:*\n`
+                    
+                    if (quotation.items && quotation.items.length > 0) {
+                      quotation.items.forEach((item, index) => {
+                        message += `${index + 1}. ${item.name || item.product?.name || 'Product'}\n`
+                        message += `   Qty: ${item.quantity} | Rate: ₹${formatIndianNumber(item.price)}\n`
+                      })
+                    }
+                    
+                    message += `\n💰 *Total Amount: ₹${formatIndianNumber(quotation.totalAmount?.toFixed(2))}*\n\n`
+                    message += `📅 Date: ${new Date(quotation.createdAt).toLocaleDateString()}\n`
+                    message += `🔗 View PDF: ${shareableUrl}\n`
+                    message += `🙏 Thank you for your business!`
+                    
+                    const whatsappUrl = `https://wa.me/?text=${encodeURIComponent(message)}`
+                    window.open(whatsappUrl, '_blank')
+                  }}
+                  className="px-2 py-1 bg-green-100 text-green-700 text-xs font-medium rounded hover:bg-green-200"
+                >
+                  Share
+                </button>
+                <button 
+                  onClick={() => navigate(`/edit-order/${quotation._id}`)}
+                  className="px-2 py-1 bg-amber-50 text-amber-600 text-xs font-medium rounded hover:bg-amber-100"
+                >
+                  Edit
+                </button>
+                <button 
+                  onClick={() => { setQuotationToDelete(quotation._id); setShowDeleteModal(true); }}
+                  className="px-2 py-1 bg-rose-50 text-rose-600 text-xs font-medium rounded hover:bg-rose-100"
+                >
+                  Del
+                </button>
+              </div>
+            </div>
+          </div>
+        ))}
+        </div>
+      </div>
+      
         {quotations.length === 0 && (
-          <div className="text-center py-12">
+          <div className="text-center py-12 bg-white">
             <div className="text-6xl mb-4">📄</div>
             <p className="text-gray-500 text-lg mb-2">No quotations found</p>
             <p className="text-gray-400 text-sm mb-4">Create your first quotation to get started</p>
@@ -365,7 +396,6 @@ const QuotationList = () => {
             </button>
           </div>
         )}
-      </div>
 
 
       {/* Delete Confirmation Modal */}

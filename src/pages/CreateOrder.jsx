@@ -11,6 +11,8 @@ const CreateOrder = () => {
   const [categories, setCategories] = useState([])
   const [selectedProducts, setSelectedProducts] = useState([])
   const [itemSelections, setItemSelections] = useState({})
+  const [searchInputs, setSearchInputs] = useState({})
+  const [highlightedIndex, setHighlightedIndex] = useState({})
 
   const [customerInfo, setCustomerInfo] = useState({
     name: '',
@@ -110,6 +112,7 @@ const CreateOrder = () => {
     if (productId) {
       const product = products.find(p => p._id === productId)
       if (product) {
+        setSearchInputs(prev => ({ ...prev, [itemType]: product.name }))
         const existingIndex = selectedProducts.findIndex(p => p.itemType === itemType)
         if (existingIndex >= 0) {
           const updated = [...selectedProducts]
@@ -121,6 +124,7 @@ const CreateOrder = () => {
       }
     } else {
       setSelectedProducts(prev => prev.filter(p => p.itemType !== itemType))
+      setSearchInputs(prev => ({ ...prev, [itemType]: '' }))
     }
   }
 
@@ -270,28 +274,77 @@ const CreateOrder = () => {
                       {category.name}
                     </td>
                     <td className="border border-gray-300 px-4 py-3">
-                      <select
-                        value={itemSelections[category._id] || ''}
-                        onChange={(e) => handleItemSelection(category._id, e.target.value)}
-                        className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
-                      >
-                        <option value="">Select {category.name}</option>
-                        {getAllCategoryProducts(category._id).map(product => {
-                          const isCompatible = isProductCompatible(product._id)
-                          return (
-                            <option 
-                              key={product._id} 
-                              value={product._id}
-                              style={{ 
-                                color: isCompatible ? '#059669' : '#6B7280',
-                                fontWeight: isCompatible ? 'bold' : 'normal'
-                              }}
-                            >
-                              {isCompatible ? '✓ ' : ''}{product.name}
-                            </option>
-                          )
-                        })}
-                      </select>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          placeholder={`Search ${category.name}...`}
+                          className="w-full px-3 py-2 border border-gray-300 rounded focus:outline-none focus:border-blue-500 text-sm"
+                          onFocus={(e) => e.target.nextElementSibling.style.display = 'block'}
+                          onBlur={(e) => setTimeout(() => e.target.nextElementSibling.style.display = 'none', 200)}
+                          onChange={(e) => {
+                            const searchValue = e.target.value
+                            setSearchInputs(prev => ({ ...prev, [category._id]: searchValue }))
+                            
+                            if (searchValue === '') {
+                              handleItemSelection(category._id, '')
+                            }
+                            
+                            const search = searchValue.toLowerCase()
+                            const options = e.target.nextElementSibling.children
+                            Array.from(options).forEach(opt => {
+                              opt.style.display = opt.textContent.toLowerCase().includes(search) ? 'block' : 'none'
+                            })
+                          }}
+                          onKeyDown={(e) => {
+                            const visibleProducts = getAllCategoryProducts(category._id).filter(p => 
+                              p.name.toLowerCase().includes(e.target.value.toLowerCase())
+                            )
+                            const currentIndex = highlightedIndex[category._id] || 0
+                            
+                            if (e.key === 'ArrowDown') {
+                              e.preventDefault()
+                              const newIndex = Math.min(currentIndex + 1, visibleProducts.length - 1)
+                              setHighlightedIndex(prev => ({ ...prev, [category._id]: newIndex }))
+                            } else if (e.key === 'ArrowUp') {
+                              e.preventDefault()
+                              const newIndex = Math.max(currentIndex - 1, 0)
+                              setHighlightedIndex(prev => ({ ...prev, [category._id]: newIndex }))
+                            } else if (e.key === 'Enter') {
+                              e.preventDefault()
+                              const product = visibleProducts[currentIndex]
+                              if (product) {
+                                handleItemSelection(category._id, product._id)
+                                setSearchInputs(prev => ({ ...prev, [category._id]: product.name }))
+                                e.target.nextElementSibling.style.display = 'none'
+                                setHighlightedIndex(prev => ({ ...prev, [category._id]: 0 }))
+                              }
+                            }
+                          }}
+                          value={searchInputs[category._id] || selectedProducts.find(p => p.itemType === category._id)?.name || ''}
+                        />
+                        <div className="absolute top-full left-0 right-0 bg-white border border-gray-300 rounded max-h-48 overflow-y-auto z-10" style={{display: 'none'}}>
+                          {getAllCategoryProducts(category._id).map((product, index) => {
+                            const isCompatible = isProductCompatible(product._id)
+                            const isHighlighted = (highlightedIndex[category._id] || 0) === index
+                            return (
+                              <div
+                                key={product._id}
+                                className={`px-3 py-2 cursor-pointer text-sm ${
+                                  isHighlighted ? 'bg-blue-100' : 'hover:bg-gray-100'
+                                } ${
+                                  isCompatible ? 'text-green-600 font-bold' : 'text-gray-700'
+                                }`}
+                                onClick={() => {
+                                  handleItemSelection(category._id, product._id)
+                                  setHighlightedIndex(prev => ({ ...prev, [category._id]: 0 }))
+                                }}
+                              >
+                                {isCompatible ? '✓ ' : ''}{product.name} - {formatIndianCurrency(product.sellingRate)}
+                              </div>
+                            )
+                          })}
+                        </div>
+                      </div>
                       {compatibleProducts.length > 0 && (
                         <div className="mt-1 text-xs text-green-600">
                           ✓ {compatibleProducts.filter(p => p.category?._id === category._id).length} compatible

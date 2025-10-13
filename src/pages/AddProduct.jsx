@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
 
 const AddProduct = () => {
   const navigate = useNavigate()
+  const location = useLocation()
   const [categories, setCategories] = useState([])
   const [categoryAttributes, setCategoryAttributes] = useState([])
   const [backendAttributes, setBackendAttributes] = useState([])
@@ -27,7 +28,24 @@ const AddProduct = () => {
 
   useEffect(() => {
     fetchCategories()
-  }, [])
+    
+    // Check if we have product data from bulk import
+    if (location.state?.productData) {
+      const { productData } = location.state
+      setFormData({
+        name: productData.name || '',
+        category: productData.category || '',
+        brand: productData.brand || '',
+        modelNumber: productData.modelNumber || '',
+        quantity: productData.quantity || 0,
+        sellingRate: productData.sellingRate || 0,
+        costRate: productData.costRate || 0,
+        status: productData.status || 'Active',
+        warranty: productData.warranty || '',
+        attributes: productData.attributes || {}
+      })
+    }
+  }, [location.state])
 
   const fetchCategories = async () => {
     try {
@@ -150,8 +168,12 @@ const AddProduct = () => {
     >
       <div className="mb-6 flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">Add New Product</h1>
-          <p className="text-gray-600 text-sm mt-1">Add a new product to your inventory</p>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-800">
+            {location.state?.isEdit ? 'Edit Product Preview' : 'Add New Product'}
+          </h1>
+          <p className="text-gray-600 text-sm mt-1">
+            {location.state?.isEdit ? 'Review and edit product from bulk import' : 'Add a new product to your inventory'}
+          </p>
         </div>
         <motion.button 
           onClick={() => navigate('/products')}
@@ -400,7 +422,7 @@ const AddProduct = () => {
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
             >
-              Create Product
+              {location.state?.isEdit ? 'Save Product' : 'Create Product'}
             </motion.button>
           </div>
         </form>

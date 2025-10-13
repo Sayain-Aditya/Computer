@@ -9,6 +9,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
     { id: 'dashboard', label: 'Dashboard', path: '/dashboard' },
     { id: 'categories', label: 'Categories', path: '/categories' },
     { id: 'products', label: 'Products', path: '/products' },
+    { id: 'bulk-import', label: 'Bulk Import', path: '/bulk-import' },
     { id: 'orders', label: 'Customer List', path: '/orders' },
     { id: 'quotations', label: 'Quotation List', path: '/quotation-list' }
   ]
@@ -70,6 +71,7 @@ const Sidebar = ({ isOpen, setIsOpen }) => {
               <span className="w-5 h-5 flex-shrink-0">
                 {item.id === 'categories' && '📁'}
                 {item.id === 'products' && '📦'}
+                {item.id === 'bulk-import' && '📥'}
                 {item.id === 'orders' && '📋'}
                 {item.id === 'quotations' && '📄'}
                 {item.id === 'dashboard' && '📊'}

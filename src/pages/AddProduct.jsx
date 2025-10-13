@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
+import React, { useState, useEffect, useRef } from 'react'
+import { useNavigate, useLocation } from 'react-router-dom'
 import { motion } from 'motion/react'
 import { toast } from 'react-toastify'
 import axios from 'axios'
@@ -686,12 +686,12 @@ Use "N/A" only if truly not found`
           </p>
         </div>
         <motion.button 
-          onClick={() => navigate('/products')}
+          onClick={() => location.state?.isEdit ? navigate('/bulk-import') : navigate('/products')}
           className="px-4 py-2 bg-gray-500 text-white rounded hover:bg-gray-600 whitespace-nowrap"
           whileHover={{ scale: 1.05 }}
           whileTap={{ scale: 0.95 }}
         >
-          Back to Products
+          {location.state?.isEdit ? 'Back to Bulk Import' : 'Back to Products'}
         </motion.button>
       </div>
       

@@ -14,6 +14,9 @@ const BulkImport = () => {
   const [step, setStep] = useState(1);
   const [selectedProducts, setSelectedProducts] = useState([]);
   const [creating, setCreating] = useState(false);
+  const [manualProducts, setManualProducts] = useState('');
+  const [processingManual, setProcessingManual] = useState(false);
+  const [generatingAI, setGeneratingAI] = useState({});
 
   useEffect(() => {
     fetchCategories();
@@ -21,7 +24,7 @@ const BulkImport = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/categories/all');
+      const response = await axios.get('https://computer-b.vercel.app/api/categories/all');
       const data = Array.isArray(response.data) ? response.data : 
                    (response.data?.categories || response.data?.data || []);
       setCategories(data);
@@ -47,7 +50,7 @@ const BulkImport = () => {
 
   const downloadTemplate = async () => {
     try {
-      const response = await axios.get('http://localhost:5000/api/bulk-import/template', {
+      const response = await axios.get('https://computer-b.vercel.app/api/bulk-import/template', {
         responseType: 'blob'
       });
       
@@ -87,7 +90,7 @@ const BulkImport = () => {
 
     try {
       const response = await axios.post(
-        'http://localhost:5000/api/bulk-import/products',
+        'https://computer-b.vercel.app/api/bulk-import/products',
         formData,
         {
           headers: {
@@ -126,7 +129,7 @@ const BulkImport = () => {
 
     setCreating(true);
     try {
-      const response = await axios.post('http://localhost:5000/api/bulk-import/create', {
+      const response = await axios.post('https://computer-b.vercel.app/api/bulk-import/create', {
         selectedProducts
       });
       toast.success(response.data.message);
@@ -139,6 +142,167 @@ const BulkImport = () => {
     } finally {
       setCreating(false);
     }
+  };
+
+  const processManualProducts = async () => {
+    if (!selectedCategory) {
+      toast.error('Please select a category first');
+      return;
+    }
+    if (!manualProducts.trim()) {
+      toast.error('Please enter product names');
+      return;
+    }
+
+    setProcessingManual(true);
+    try {
+      // Create a temporary Excel-like data structure for the backend
+      const productNames = manualProducts.split('\n').filter(name => name.trim());
+      const excelData = productNames.map(name => ({
+        name: name.trim(),
+        sellingRate: 1000 // Default selling rate
+      }));
+
+      // Send to backend for AI processing
+      const response = await axios.post(
+        'https://computer-b.vercel.app/api/bulk-import/products',
+        {
+          manualData: excelData,
+          categoryId: selectedCategory
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      setResults(response.data.data);
+      setSelectedProducts([]);
+      toast.success(response.data.message);
+      setManualProducts('');
+      setStep(3);
+    } catch (error) {
+      console.error('Manual processing error:', error);
+      toast.error(error.response?.data?.message || 'Failed to process manual products');
+    } finally {
+      setProcessingManual(false);
+    }
+  };
+
+  const generateAIAttributesForProduct = async (productIndex) => {
+    const product = results.success[productIndex];
+    if (!product) return;
+
+    setGeneratingAI(prev => ({ ...prev, [productIndex]: true }));
+    
+    try {
+      // Get category attributes
+      const attributesResponse = await axios.get(`https://computer-b.vercel.app/api/attributes/category/${selectedCategory}/attributes`);
+      
+      let existingAttributes = {};
+      if (attributesResponse.data && attributesResponse.data.attributes) {
+        existingAttributes = attributesResponse.data.attributes;
+      }
+      
+      const existingAttrNames = Object.keys(existingAttributes);
+      
+      if (existingAttrNames.length === 0) {
+        // Generate new attributes
+        const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+          contents: [{
+            parts: [{
+              text: `Generate relevant technical attributes and values for this product: "${product.name}"\n\nCreate 8-12 important technical specifications\n\nFormat: "attributeName: actualValue"\nEach pair on a new line\nUse REAL specifications\nInclude attributes like: Processor, RAM, Storage, Graphics, Display, etc.`
+            }]
+          }]
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const text = response.data.candidates[0].content.parts[0].text;
+        const lines = text.split('\n');
+        const aiAttributes = {};
+        
+        lines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine && trimmedLine.includes(':')) {
+            const [key, ...valueParts] = trimmedLine.split(':');
+            const value = valueParts.join(':').trim().replace(/\*\*/g, '').replace(/\*/g, '');
+            const cleanKey = key.trim().replace(/\*\*/g, '').replace(/\*/g, '');
+            if (cleanKey && value && value !== 'N/A' && value.toLowerCase() !== 'n/a' && value.toLowerCase() !== 'not applicable') {
+              aiAttributes[cleanKey] = value;
+            }
+          }
+        });
+        
+        // Update the product with AI attributes
+        const updatedResults = { ...results };
+        updatedResults.success[productIndex].productData.attributes = aiAttributes;
+        updatedResults.success[productIndex].attributesAdded = Object.keys(aiAttributes).length;
+        setResults(updatedResults);
+        
+        console.log('Generated new attributes:', aiAttributes);
+        toast.success(`Generated ${Object.keys(aiAttributes).length} AI attributes for ${product.name}`);
+      } else {
+        // Use existing attributes
+        const response = await axios.post(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-001:generateContent?key=${import.meta.env.VITE_GEMINI_API_KEY}`, {
+          contents: [{
+            parts: [{
+              text: `Analyze this product: "${product.name}"\n\nGenerate accurate values ONLY for these attributes: ${existingAttrNames.join(', ')}\n\nFormat: "attributeName: actualValue"\nEach pair on a new line\nUse REAL specifications\nIf an attribute doesn't apply, use "N/A"`
+            }]
+          }]
+        }, {
+          headers: { 'Content-Type': 'application/json' }
+        });
+        
+        const text = response.data.candidates[0].content.parts[0].text;
+        const lines = text.split('\n');
+        const aiAttributes = {};
+        
+        lines.forEach(line => {
+          const trimmedLine = line.trim();
+          if (trimmedLine && trimmedLine.includes(':')) {
+            const [key, ...valueParts] = trimmedLine.split(':');
+            const value = valueParts.join(':').trim();
+            if (key.trim() && value && existingAttrNames.includes(key.trim()) && value !== 'N/A' && value.toLowerCase() !== 'n/a') {
+              aiAttributes[key.trim()] = value;
+            }
+          }
+        });
+        
+        const finalAttributes = { ...existingAttributes, ...aiAttributes };
+        
+        // Update the product with AI attributes
+        const updatedResults = { ...results };
+        updatedResults.success[productIndex].productData.attributes = finalAttributes;
+        updatedResults.success[productIndex].attributesAdded = Object.keys(finalAttributes).length;
+        setResults(updatedResults);
+        
+        console.log('Generated attributes:', finalAttributes);
+        toast.success(`Generated ${Object.keys(aiAttributes).length} AI attributes for ${product.name}`);
+      }
+    } catch (error) {
+      console.error('Error generating AI attributes:', error);
+      toast.error(`Failed to generate AI attributes for ${product.name}`);
+    } finally {
+      setGeneratingAI(prev => ({ ...prev, [productIndex]: false }));
+    }
+  };
+
+  const generateAIForAllProducts = async () => {
+    if (!results?.success?.length) return;
+    
+    toast.info(`🤖 Starting AI generation for ${results.success.length} products...`);
+    
+    for (let i = 0; i < results.success.length; i++) {
+      await generateAIAttributesForProduct(i);
+      // Small delay between requests to avoid rate limiting
+      if (i < results.success.length - 1) {
+        await new Promise(resolve => setTimeout(resolve, 2000));
+      }
+    }
+    
+    toast.success('✅ AI attribute generation completed for all products!');
   };
 
   return (
@@ -205,15 +369,38 @@ const BulkImport = () => {
             </button>
           </div>
           
-          <div className="flex gap-4 mb-6">
-            <motion.button
-              onClick={downloadTemplate}
-              className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
-              whileHover={{ scale: 1.02, y: -1 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              📥 Download Template
-            </motion.button>
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex gap-4">
+              <motion.button
+                onClick={downloadTemplate}
+                className="px-6 py-3 bg-green-600 text-white rounded-xl font-medium shadow-sm hover:shadow-md"
+                whileHover={{ scale: 1.02, y: -1 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                📥 Download Template
+              </motion.button>
+            </div>
+            
+            <div className="bg-blue-50 border border-blue-200 rounded-xl p-4">
+              <h3 className="font-medium text-blue-800 mb-2">✍️ Or Add Products Manually</h3>
+              <p className="text-sm text-blue-600 mb-3">Enter product names (one per line):</p>
+              <textarea
+                value={manualProducts}
+                onChange={(e) => setManualProducts(e.target.value)}
+                placeholder={`Intel Core i5-12400F\nAMD Ryzen 5 5600X\nNVIDIA RTX 4070\nCorsair Vengeance LPX 16GB`}
+                className="w-full px-3 py-2 border border-blue-300 rounded focus:outline-none focus:border-blue-500 h-32 text-sm"
+                disabled={processingManual}
+              />
+              <motion.button
+                onClick={processManualProducts}
+                disabled={processingManual || !manualProducts.trim()}
+                className="mt-3 px-6 py-2 bg-blue-600 text-white rounded-lg font-medium disabled:opacity-50"
+                whileHover={!processingManual ? { scale: 1.02 } : {}}
+                whileTap={!processingManual ? { scale: 0.98 } : {}}
+              >
+                {processingManual ? '🤖 AI Processing...' : '🚀 Process with AI'}
+              </motion.button>
+            </div>
           </div>
 
           <div className="border-2 border-dashed border-gray-300 rounded-xl p-8 text-center">
@@ -282,6 +469,13 @@ const BulkImport = () => {
             <h2 className="text-xl font-semibold text-gray-800">📊 Product Preview</h2>
             <div className="flex gap-2">
               <button 
+                onClick={generateAIForAllProducts}
+                disabled={Object.values(generatingAI).some(Boolean)}
+                className="px-4 py-2 bg-purple-600 text-white rounded-lg disabled:opacity-50"
+              >
+                {Object.values(generatingAI).some(Boolean) ? '🔄 Generating...' : '🤖 AI for All'}
+              </button>
+              <button 
                 onClick={createSelectedProductsHandler}
                 disabled={creating || !selectedProducts.length}
                 className="px-4 py-2 bg-green-600 text-white rounded-lg disabled:opacity-50"
@@ -326,7 +520,8 @@ const BulkImport = () => {
                       />
                       <div>
                         <div className="text-sm font-medium text-blue-800">{item.name}</div>
-                        <div className="text-xs text-blue-600">₹{item.productData.sellingRate} • {item.attributesAdded} AI attributes</div>
+                        <div className="text-xs text-blue-600">₹{item.productData.sellingRate} • {item.attributesAdded} attributes</div>
+
                       </div>
                     </div>
                     <button
